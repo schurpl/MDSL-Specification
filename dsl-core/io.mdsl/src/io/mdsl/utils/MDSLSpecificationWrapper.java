@@ -336,6 +336,21 @@ public class MDSLSpecificationWrapper {
 		return result;
 	}
 	
+	public List<EndpointInstance> findAllProviderEndpointInstancesFor(EndpointContract endpointType){
+		List<EndpointList> endpoints = EcoreUtil2.eAllOfType(mdslSpecification, EndpointList.class);
+		List<EndpointInstance> result = new ArrayList<EndpointInstance>();
+
+		for(int i=0; i<endpoints.size();i++) {
+			EndpointList nextEndpointList = endpoints.get(i);
+			if(nextEndpointList.getContract().getName().equals(endpointType.getName())) {
+				
+				EList<EndpointInstance> endpointInstances = nextEndpointList.getEndpoints();
+				result.addAll(endpointInstances);
+			}
+		}
+		return result;
+	}
+	
 	public EList<HTTPResourceBinding> getHTTPResourceBindings(EndpointInstance endpointInstance) {
 		EList<TechnologyBinding> protocolBindings = endpointInstance.getPb();
 		for(int i=0;i<protocolBindings.size();i++) {

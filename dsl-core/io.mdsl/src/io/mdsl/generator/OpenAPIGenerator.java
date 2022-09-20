@@ -1,5 +1,6 @@
 package io.mdsl.generator;
 
+import java.util.Map;
 import java.util.Set;
 
 import org.eclipse.emf.common.util.URI;
@@ -32,6 +33,21 @@ public class OpenAPIGenerator extends AbstractMDSLGenerator {
 
 		// convert MDSL to OpenAPI model:
 		OpenAPI oas = new MDSL2OpenAPIConverter(mdslSpecification).convert();
+		
+		 //check of specification contains sla and generate extension file 
+		if(!mdslSpecification.getSlas().isEmpty()) {
+			OpenAPISLAGenerator slaGen = new OpenAPISLAGenerator(mdslSpecification.getSlas(),inputFileURI); 
+			
+			String slaYaml = slaGen.generate();
+			
+			// generate output file
+			fsa.generateFile(slaGen.getSlaOutputFileName(), slaYaml);
+			
+			// set ref to generate sla file in oas file 
+			oas.setInfo(slaGen.setSLAPath(oas.getInfo()));
+			
+			
+		}
 
 		// serialize model as YAML file:
 		String yaml = Yaml.pretty(oas);
