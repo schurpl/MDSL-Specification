@@ -78,7 +78,7 @@ public class OpenAPISLAGenerator {
 		slaMap.put(DOC_VERSION_NAME, SLA_DOC_Version);
 		ArrayList<Map<String, Object>> slaTemplates = new ArrayList();
 		for (SLATemplate slaTemplate : sla) {
-			slaTemplates.add(slaConverter.generateSLATemplate(slaTemplate));
+			slaTemplates.add(slaConverter.convertSLATemplate(slaTemplate));
 		}
 		slaMap.put(SLA_NODE_NAME, slaTemplates);
 

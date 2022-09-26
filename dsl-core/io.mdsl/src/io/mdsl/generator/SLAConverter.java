@@ -15,27 +15,27 @@ import io.mdsl.apiDescription.SLO;
 import io.mdsl.apiDescription.SimpleMeasurement;
 
 public class SLAConverter {
-	Map<String, Object> generateSLATemplate(SLATemplate slaTemplate) {
+	Map<String, Object> convertSLATemplate(SLATemplate slaTemplate) {
 		Map<String, Object> slaTemplateMap = new LinkedHashMap<>();
 		slaTemplateMap.put("name", slaTemplate.getName());
-		slaTemplateMap.put("slas", generateInternalSlas(slaTemplate.getSlas()));
+		slaTemplateMap.put("slas", convertInternalSlas(slaTemplate.getSlas()));
 		return slaTemplateMap;
 	}
 
-	private List<Map<String, Object>> generateInternalSlas(EList<InternalSLA> internalSlas) {
+	private List<Map<String, Object>> convertInternalSlas(EList<InternalSLA> internalSlas) {
 		List<Map<String, Object>> internalSlasList = new ArrayList<>();
 		for (InternalSLA internalSla : internalSlas) {
-			internalSlasList.add(generateInternalSla(internalSla));
+			internalSlasList.add(convertInternalSla(internalSla));
 		}
 		return internalSlasList;
 	}
 
-	public Map<String, Object> generateInternalSla(InternalSLA internalSla) {
+	public Map<String, Object> convertInternalSla(InternalSLA internalSla) {
 		Map<String, Object> internalSlaMap = new LinkedHashMap<>();
 
 		internalSlaMap.put("type", internalSla.getType());
 
-		internalSlaMap.put("slos", generateSlos(internalSla.getSlos()));
+		internalSlaMap.put("slos", convertSlos(internalSla.getSlos()));
 
 		if (internalSla.getPenalties() != null) {
 			internalSlaMap.put("penalty", internalSla.getPenalties());
@@ -49,55 +49,55 @@ public class SLAConverter {
 		}
 		// generate Rate limit
 		if (!internalSla.getRl().isEmpty()) {
-			internalSlaMap.put("rate limits", generateRateLimits(internalSla.getRl()));
+			internalSlaMap.put("rate limits", convertRateLimits(internalSla.getRl()));
 		}
 		return internalSlaMap;
 	}
 
-	private List<Map<String, Object>> generateRateLimits(EList<RateLimit> rl) {
+	private List<Map<String, Object>> convertRateLimits(EList<RateLimit> rl) {
 		List<Map<String, Object>> rateLimitsList = new ArrayList<>();
 		for (RateLimit rateLimit : rl) {
-			rateLimitsList.add(generateRateLimit(rateLimit));
+			rateLimitsList.add(convertRateLimit(rateLimit));
 		}
 		return rateLimitsList;
 	}
 
-	private Map<String, Object> generateRateLimit(RateLimit rateLimit) {
+	private Map<String, Object> convertRateLimit(RateLimit rateLimit) {
 		Map<String, Object> rateLimitMap = new LinkedHashMap<>();
 		if (rateLimit.getCallRate() != null) {
 			rateLimitMap.put("rateLimit", "MAX_CALLS");
-			rateLimitMap.put("measurement", generateSimpleMeasurement(rateLimit.getCallRate()));
+			rateLimitMap.put("measurement", convertSimpleMeasurement(rateLimit.getCallRate()));
 		} else if (rateLimit.getDataRate() != null) {
 			rateLimitMap.put("rateLimit", "DATA_QUOTA");
-			rateLimitMap.put("measurement", generateSimpleMeasurement(rateLimit.getDataRate()));
+			rateLimitMap.put("measurement", convertSimpleMeasurement(rateLimit.getDataRate()));
 		} else {
 			rateLimitMap.put("type", "NONE");
 		}
-		rateLimitMap.put("interval", generateSimpleMeasurement(rateLimit.getInterval()));
+		rateLimitMap.put("interval", convertSimpleMeasurement(rateLimit.getInterval()));
 		return rateLimitMap;
 	}
 
-	private List<Map<String, Object>> generateSlos(EList<SLO> slos) {
+	private List<Map<String, Object>> convertSlos(EList<SLO> slos) {
 		List<Map<String, Object>> sloList = new ArrayList<>();
 		for (SLO slo : slos) {
-			sloList.add(generateSLo(slo));
+			sloList.add(convertSlo(slo));
 		}
 		return sloList;
 	}
 
-	private Map<String, Object> generateSLo(SLO slo) {
+	private Map<String, Object> convertSlo(SLO slo) {
 		Map<String, Object> sloMap = new LinkedHashMap<>();
 		sloMap.put("name", slo.getName());
 		sloMap.put("qualityGoal", slo.getQualityGoal());
 		if (slo.getMeasurement().getLz() != null) {
-			sloMap.put("measurement", generateLandingZone(slo.getMeasurement().getLz()));
+			sloMap.put("measurement", convertLandingZone(slo.getMeasurement().getLz()));
 		} else {
-			sloMap.put("measurement", generateSimpleMeasurement(slo.getMeasurement().getSm()));
+			sloMap.put("measurement", convertSimpleMeasurement(slo.getMeasurement().getSm()));
 		}
 		return sloMap;
 	}
 
-	private Map<String, Object> generateSimpleMeasurement(SimpleMeasurement sm) {
+	private Map<String, Object> convertSimpleMeasurement(SimpleMeasurement sm) {
 		Map<String, Object> simpleMeasurementMap = new LinkedHashMap<>();
 		simpleMeasurementMap.put("value", sm.getValue());
 		if(sm.getUnitOfMeasure() != null) {
@@ -106,12 +106,12 @@ public class SLAConverter {
 		return simpleMeasurementMap;
 	}
 
-	private Map<String, Object> generateLandingZone(LandingZone lz) {
+	private Map<String, Object> convertLandingZone(LandingZone lz) {
 		Map<String, Object> landingZoneMap = new LinkedHashMap<>();
-		landingZoneMap.put("minimal", generateSimpleMeasurement(lz.getS()));
-		landingZoneMap.put("target", generateSimpleMeasurement(lz.getT()));
+		landingZoneMap.put("minimal", convertSimpleMeasurement(lz.getS()));
+		landingZoneMap.put("target", convertSimpleMeasurement(lz.getT()));
 		if (lz.getO() != null) {
-			landingZoneMap.put("optional", generateSimpleMeasurement(lz.getO()));
+			landingZoneMap.put("optional", convertSimpleMeasurement(lz.getO()));
 		}
 		return landingZoneMap;
 	}

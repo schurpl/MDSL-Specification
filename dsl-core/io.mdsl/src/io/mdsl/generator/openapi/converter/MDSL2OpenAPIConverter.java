@@ -60,6 +60,8 @@ import io.swagger.v3.core.util.RefUtils;
  */
 public class MDSL2OpenAPIConverter {
 
+	private static final String X_EXTERNAL_ENPOINT_SLAS = "x-external-endpoint-slas";
+	private static final String X_INTERNAL_ENDPOINT_SLAS = "x-internal-endpoint-slas";
 	private static final String JWT_BEARER_FORMAT = "JWT";
 	private static final String API_KEY_SCHEME_NAME = "api_key";
 	private static final String BEARER_SCHEME_NAME = "bearer";
@@ -210,11 +212,31 @@ public class MDSL2OpenAPIConverter {
 				ExternalDocumentation externalDocs = new ExternalDocumentation();
 				externalDocs.setDescription(wrapContractAndPatternName(eil.getContract()));
 				externalDocs.setUrl(MAPLinkResolver.provideLinktoMAPWebsite(eil.getContract()));
-				if(ei.getSla() != null && ei.getSla().getExternal() != null) {
-					externalDocs.setExtensions(Map.of("x-external-endpoint-sla",ei.getSla().getExternal().getName()));
-				}else if (ei.getSla() != null && ei.getSla().getBuiltin() != null) {
-					externalDocs.setExtensions(Map.of("x-internal-endpoint-sla",new SLAConverter().generateInternalSla(ei.getSla().getBuiltin())));
+				List<String> externalSlas = new ArrayList<>();
+				List<Map<String, Object>> internalSlas = new ArrayList<>();
+				if(provider.getSla() != null && provider.getSla().getExternal() != null) {
+					externalSlas.add(provider.getSla().getExternal().getName());
 				}
+				if(provider.getSla() != null && provider.getSla().getBuiltin() != null) {
+					internalSlas.add(new SLAConverter().convertInternalSla(provider.getSla().getBuiltin()));
+				}
+				if(ei.getSla() != null && ei.getSla().getExternal() != null) {
+					externalSlas.add(ei.getSla().getExternal().getName());
+				}else if (ei.getSla() != null && ei.getSla().getBuiltin() != null) {
+					internalSlas.add( new SLAConverter().convertInternalSla(ei.getSla().getBuiltin()));
+				}
+				
+				if(!internalSlas.isEmpty() && ! externalSlas.isEmpty()) {
+					Map<String , Object> slaMap = new LinkedHashMap<>();
+					slaMap.put(X_INTERNAL_ENDPOINT_SLAS, internalSlas);
+					slaMap.put(X_EXTERNAL_ENPOINT_SLAS,externalDocs);
+					externalDocs.setExtensions(slaMap);
+				} else if (!internalSlas.isEmpty()) {
+					externalDocs.setExtensions(Map.of(X_INTERNAL_ENDPOINT_SLAS, internalSlas));
+				} else {
+					externalDocs.setExtensions(Map.of(X_EXTERNAL_ENPOINT_SLAS,externalSlas));
+				}
+		
 				
 				tag.setExternalDocs(externalDocs);
 			}
@@ -245,6 +267,7 @@ public class MDSL2OpenAPIConverter {
 		externalDocs.setDescription(wrapContractAndPatternName(endpointType));
 		externalDocs.setUrl(MAPLinkResolver.provideLinktoMAPWebsite(endpointType));
 		List<EndpointInstance> instanceList = mdslWrapper.findAllProviderEndpointInstancesFor(endpointType);
+		List<Provider> providerList = mdslWrapper.findAllPriversfor(endpointType);
 		if(!instanceList.isEmpty()) {
 			List<String> slaNames = new ArrayList<>();
 			List<Map<String,Object>> internalSlas = new ArrayList<>();
@@ -254,14 +277,25 @@ public class MDSL2OpenAPIConverter {
 					slaNames.add(instance.getSla().getExternal().getName());
 				}
 				else if(instance.getSla() != null && instance.getSla().getBuiltin() != null) {
-					internalSlas.add(new SLAConverter().generateInternalSla(instance.getSla().getBuiltin()));
+					internalSlas.add(new SLAConverter().convertInternalSla(instance.getSla().getBuiltin()));
 				}
 			}
+		if(!providerList.isEmpty()) {
+			for (Provider provider : providerList) {
+				if(provider.getSla() != null && provider.getSla().getExternal() != null) {
+					slaNames.add(provider.getSla().getExternal().getName());
+				}
+				else if(provider.getSla() != null && provider.getSla().getBuiltin() != null) {
+					internalSlas.add(new SLAConverter().convertInternalSla(provider.getSla().getBuiltin()));
+				}
+			}
+		}
+			
 			if(!slaNames.isEmpty()) {
-				extensionMap.put("x-external-endpinnt-slas", slaNames);
+				extensionMap.put(X_EXTERNAL_ENPOINT_SLAS, slaNames);
 			}
 			if(!internalSlas.isEmpty()) {
-				extensionMap.put("x-internal-endpoint-slas", internalSlas);
+				extensionMap.put(X_INTERNAL_ENDPOINT_SLAS, internalSlas);
 			}
 			externalDocs.setExtensions(extensionMap);
 		}
