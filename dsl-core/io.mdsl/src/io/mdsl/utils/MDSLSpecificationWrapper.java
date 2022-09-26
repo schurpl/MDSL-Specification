@@ -351,15 +351,18 @@ public class MDSLSpecificationWrapper {
 		return result;
 	}
 	
-	@SuppressWarnings("unlikely-arg-type")
+	
 	public List<Provider> findAllPriversfor(EndpointContract endpointType){
 		List<Provider> providers = EcoreUtil2.eAllOfType(mdslSpecification, Provider.class);
 		List<Provider> result = new ArrayList<>();
 		
 		for (Provider provider : providers) {
-			if(provider.getEpl().contains(endpointType)) {
-				result.add(provider);
+			for(EndpointList endpoint : provider.getEpl()) {
+				if(endpoint.getContract().equals(endpointType)) {
+					result.add(provider);
+				}
 			}
+			
 		}
 		return result;
 		

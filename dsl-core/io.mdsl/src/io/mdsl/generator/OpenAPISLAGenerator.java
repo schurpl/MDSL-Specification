@@ -61,7 +61,7 @@ public class OpenAPISLAGenerator {
 	 */
 	public Info setSLAPath(Info info) {
 		Map<String, Object> extensions = new LinkedHashMap<String, Object>(info.getExtensions());
-		String relatveFileName = "." + File.separator + slaOutputFileName;
+		String relatveFileName = "./" + slaOutputFileName;
 		extensions.put(SLA_EXTIONSION, Map.of(REF_KEYWORD, relatveFileName));
 		info.setExtensions(extensions);
 		return info;

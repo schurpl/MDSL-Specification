@@ -229,11 +229,11 @@ public class MDSL2OpenAPIConverter {
 				if(!internalSlas.isEmpty() && ! externalSlas.isEmpty()) {
 					Map<String , Object> slaMap = new LinkedHashMap<>();
 					slaMap.put(X_INTERNAL_ENDPOINT_SLAS, internalSlas);
-					slaMap.put(X_EXTERNAL_ENPOINT_SLAS,externalDocs);
+					slaMap.put(X_EXTERNAL_ENPOINT_SLAS,externalSlas);
 					externalDocs.setExtensions(slaMap);
 				} else if (!internalSlas.isEmpty()) {
 					externalDocs.setExtensions(Map.of(X_INTERNAL_ENDPOINT_SLAS, internalSlas));
-				} else {
+				} else if (!externalSlas.isEmpty()) {
 					externalDocs.setExtensions(Map.of(X_EXTERNAL_ENPOINT_SLAS,externalSlas));
 				}
 		
