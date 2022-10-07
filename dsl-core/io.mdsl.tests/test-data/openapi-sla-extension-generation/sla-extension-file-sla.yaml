@@ -1,0 +1,82 @@
+sla-doc-version: "1.0"
+sla-templates:
+- name: TestSLA1
+  slas:
+  - type: NONE
+    slos:
+    - name: TestSLO1
+      qualityGoal: A SLO for Test purposes
+      measurement:
+        value: 1
+        unit: hours
+- name: TestSLA2
+  slas:
+  - type: NONE
+    slos:
+    - name: TestSLO2
+      qualityGoal: A SLO for Test purposes
+      measurement:
+        minimal:
+          value: 10
+          unit: seconds
+        target:
+          value: 5
+          unit: seconds
+        optional:
+          value: 2
+          unit: seconds
+- name: TestSLA3
+  slas:
+  - type: IMPLICIT
+    slos:
+    - name: TestSLO3
+      qualityGoal: A SLO for Test purposes
+      measurement:
+        value: 1
+        unit: hours
+- name: TestSLA4
+  slas:
+  - type: NONE
+    slos:
+    - name: TestSLO4
+      qualityGoal: A SLO for Test purposes
+      measurement:
+        value: 1
+        unit: hours
+    penalty: U must Test more things
+- name: TestSLA5
+  slas:
+  - type: NONE
+    slos:
+    - name: TestSLO5
+      qualityGoal: A SLO for Test purposes
+      measurement:
+        value: 1
+        unit: hours
+    penalty: U must Test more things
+    rate limits:
+    - rateLimit: MAX_CALLS
+      measurement:
+        value: 10
+      interval:
+        value: 1
+        unit: minutes
+- name: TestSLAFull
+  slas:
+  - type: QUALITATIVE
+    slos:
+    - name: TestSLO
+      qualityGoal: To test a fully sepcified SLA with all optional parameters
+      measurement:
+        value: 10
+        unit: seconds
+    penalty: A failing test case
+    notification: The guy who sits infront the laptop. Probably me
+    ratePlan: USAGE_BASED
+    rate limits:
+    - rateLimit: DATA_QUOTA
+      measurement:
+        value: 200
+      interval:
+        value: 5
+        unit: minutes

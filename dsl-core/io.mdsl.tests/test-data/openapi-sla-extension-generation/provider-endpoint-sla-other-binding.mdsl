@@ -1,0 +1,21 @@
+API description TestAPI
+
+data type Test P
+
+endpoint type TestEndpoint
+  serves as INFORMATION_HOLDER_RESOURCE
+  exposes
+    operation doSomethingJust4Test
+      expecting
+        payload ("attr1":D<string>, "attr2":D<string>)
+      delivering
+        payload Test
+SLA template TestSLA objective TestSLO "test generator" 1 hours 
+
+API provider TestEndpointProvider
+	offers TestEndpoint
+	at endpoint location "/endpoint"
+	via protocol SOAP_HTTP
+	with endpoint SLA objective TestSLO1 "A SLO for Test purposes" 1 hours
+	with provider SLA TestSLA
+IPA

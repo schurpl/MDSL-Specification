@@ -1,0 +1,50 @@
+openapi: 3.0.1
+info:
+  title: TestAPI
+  version: "1.0"
+  x-external-sla-file:
+    $ref: ./provider-sla-other-binding-sla.yaml
+servers: []
+tags:
+- name: TestEndpoint
+  externalDocs:
+    description: TestEndpoint contract, Information Holder Resource role
+    url: https://microservice-api-patterns.org/patterns/responsibility/endpointRoles/InformationHolderResource.html
+    x-external-endpoint-slas:
+    - TestSLA1
+paths:
+  /TestEndpoint:
+    summary: general data-oriented endpoint
+    post:
+      tags:
+      - TestEndpoint
+      summary: doSomethingJust4Test
+      description: ""
+      operationId: doSomethingJust4Test
+      requestBody:
+        description: Message payload (content)
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                attr1:
+                  type: string
+                  description: <a href="https://microservice-api-patterns.org/patterns/structure/elementStereotypes/DataElement"
+                    target="_blank">Data Element</a>
+                attr2:
+                  type: string
+                  description: <a href="https://microservice-api-patterns.org/patterns/structure/elementStereotypes/DataElement"
+                    target="_blank">Data Element</a>
+              description: request body elements for doSomethingJust4Test
+      responses:
+        "200":
+          description: doSomethingJust4Test successful execution
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Test'
+components:
+  schemas:
+    Test:
+      type: object

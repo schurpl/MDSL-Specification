@@ -1,0 +1,53 @@
+API description TestAPI
+
+data type Test P
+
+endpoint type TestEndpoint
+  serves as INFORMATION_HOLDER_RESOURCE
+  exposes
+    operation doSomethingJust4Test
+      expecting
+        payload ("attr1":D<string>, "attr2":D<string>)
+      delivering
+        payload Test
+        
+SLA template TestSLA1
+	objective TestSLO1 "A SLO for Test purposes" 1 hours
+
+		
+SLA template TestSLA2
+	objective TestSLO2 "A SLO for Test purposes" 
+		minimal 10 seconds
+		target 5 seconds
+		optimal 2 seconds
+
+SLA template TestSLA3
+	type IMPLICIT
+	objective TestSLO3 "A SLO for Test purposes" 1 hours	
+
+SLA template TestSLA4
+	objective TestSLO4 "A SLO for Test purposes" 1 hours	
+	penalty "U must Test more things"
+
+SLA template TestSLA5
+	objective TestSLO5 "A SLO for Test purposes" 1 hours	
+	penalty "U must Test more things"
+	rate limit MAX_CALLS 10 within 1 minutes
+	
+SLA template TestSLAFull
+	type QUALITATIVE
+	objective TestSLO "To test a fully sepcified SLA with all optional parameters" 10 seconds
+	penalty "A failing test case"
+	notification "The guy who sits infront the laptop. Probably me"
+	rate plan USAGE_BASED
+	rate limit DATA_QUOTA 200 within 5 minutes 
+
+	
+API provider TestEndpointProvider
+	offers TestEndpoint
+	at endpoint location "/endpoint"
+	via protocol HTTP binding resource Home operation doSomethingJust4Test to GET
+	element "attr1" realized as COOKIE parameter
+	// "attr2" not mapped, so query used as default (GET binding)
+
+IPA
