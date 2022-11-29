@@ -16,6 +16,7 @@
 
 grammar io.mdsl.APIDescription with org.eclipse.xtext.common.Terminals
 
+import "http://www.eclipse.org/emf/2002/Ecore" as ecore
 /*  
 ---
 title: Microservices Domain Specific Language (MDSL) Language Specification
@@ -37,7 +38,7 @@ ServiceSpecification hidden(WS, ML_COMMENT, SL_COMMENT):
     events+=EventTypes* // experimental preview 
     commands+=CommandTypes* // experimental preview
 	contracts+=(EndpointContract|ChannelContract)* // ChannelContract is AsyncMDSL extension	
-	slas+=SLATemplate*
+	(slas+= SLATemplate* | oslos += OSLOTemplate*)
 	providers+=(Provider|MessageBroker)* // MessageBroker is AsyncMDSL extension
 	clients+=(Client|MessageEndpoint)* // MessageEndpoint is AsyncMDSL extension
 	gateways+=Gateway* // experimental preview  
@@ -53,6 +54,140 @@ ServiceSpecification hidden(WS, ML_COMMENT, SL_COMMENT):
 // * B) service endpoints (including operations) 
 // * C) instance-level concepts (provider, client, gateway; implementation)
 // * D) orchestration flows and integration scenarios (experimental)
+
+OSLOTemplate:
+	'OpenSLOTemplate' 
+	name=ID 'displayed' 'as' displayName=STRING
+	// Think about description represenattion
+	'part' 'of' service= Service
+	'indicator' indicator=SLI
+	'in' 'time-window' timeWindow = TimeWindow
+	'budgeted' budgetingMethod = BudgetingMethod
+	'with' 'objectives' objectives+=Objective
+	'with' 'Alert' 'Policies' alertPol = AlertPolicy
+;
+
+Duration:
+	value=INT
+	unitOfMeasure = ('m'|'h'|'d'|'w'|'M'|'Q'|'Y')
+;
+
+TimeWindow:
+	duration = Duration
+	'is' 'rolling' rolling_=BOOLEAN
+	(calendarBased = CalendarBased)?
+;
+BOOLEAN returns ecore::EBoolean:
+	'true' | 'false'
+;
+
+CalendarBased:
+	'starts' 'at' startDate = DATE
+	'in' 'timeZone' timeZone = STRING
+;
+
+terminal DATE:
+	('0'..'9')+'-'('0'..'1')('0'..'9')'-'('0'..'3')('0'..'9')' ' ('0'..'2')('0'..'9')':'('0'..'5')('0'..'9')':'('0'..'5')('0'..'9')
+;
+
+Double returns ecore::EDouble:
+	INT+'.'INT*
+;
+
+AlertPolicy:
+	'Alert' 'Policy'
+	name=ID 'displayed' 'as' displayName = STRING
+	//Description überlegen
+	'alert' 'when' 'no' 'data' nodata= BOOLEAN
+	'alert' 'when' 'resolved' resolved = BOOLEAN
+	'alert' 'when' 'breaching' breaching = BOOLEAN
+	'conditions' conditions+=AlertCondition
+	'notifies' notificationTarget = AlertNotificationTarget
+;
+
+AlertNotificationTarget:
+	'Alert' 'Notification' 'Target'
+	name=ID 'displayed' 'as' displayName = STRING
+	'target' target=STRING
+	'description' description = STRING
+	
+;
+AlertCondition:
+	'Alert' 'Condition'
+	name=ID 'displayed' 'as' displayName = STRING
+	//Description
+	'severity' severity=STRING
+	'condition' condition = Condition //Check if other Conditions than burnrate are applicapble
+	
+;
+
+Condition:
+	'Condition'
+	name=ID
+	'operator' operator = OPERATOR 
+	'with' 'threshold' threshold=INT
+	'look' 'back' lookBack = Duration
+	'alert' 'after' alertAfter = Duration
+;
+	
+terminal OPERATOR:
+	'lte'|'gte' |'lt' |'gt'
+;
+Objective:
+	name=ID
+	 'with' 'operator' operator = OPERATOR
+	 coompValue?= Double
+	'with' 'target' target= Double
+	'with' 'target' 'percent' targetPer = Double
+	'with' 'SiliceTarget' sliceTarget = Double
+	'with' 'SiliceWindow' (numeric = INT | durationBased = Duration)
+;
+Service:
+	'Service'
+	name=ID 'displayed' 'as' displayName = STRING
+	'purpose:' purpose = STRING
+;
+
+SLI:
+	'SLI'
+	name=ID 'displayed' 'as' displayName= STRING
+	//Description überlegen
+	'with' (tMetric = Thresholdmetric | rMetric = RatioMetric )
+	
+;
+
+Thresholdmetric:
+	'Threshold' 'Methric' 'from' metricSource = MetricSource
+	'type' type = STRING
+	'spec' spec = STRING  
+;
+
+RatioMetric:
+	'Ratio' 'Metric'
+	'counter' counter = BOOLEAN
+	'good' good = MetricSource
+	'bad' bad = MetricSource
+	'total' total = MetricSource
+	'with' 'raw' 'type' rType = ('success' | 'failure')
+	'raw' raw = MetricSource
+;
+
+MetricSource:
+	('dataSource' dataSource = DataSource)?
+	'type' type = STRING
+	'with' 'spec' spec = STRING
+;
+DataSource:
+	'Data' 'Source' name=ID 'displayed' 'as' displayName= STRING
+	'description' description= STRING
+	'type' type = STRING // Muss man selber predifinen
+	'connection' 'details' // Mann soll spezifizieren was man tut um an datan zu kommen
+;
+
+BudgetingMethod:
+	'Occurrences' | 'Timeslices' | 'RatioTimeslices'
+;
+
 
 
 Visibility: 'PUBLIC_API' | 'COMMUNITY_API' | 'SOLUTION_INTERNAL_API' | STRING;

@@ -42,6 +42,7 @@ import io.mdsl.apiDescription.IntegrationScenario;
 import io.mdsl.apiDescription.LinkContract;
 import io.mdsl.apiDescription.MessageBroker;
 import io.mdsl.apiDescription.MessageEndpoint;
+import io.mdsl.apiDescription.OSLOTemplate;
 import io.mdsl.apiDescription.Orchestration;
 import io.mdsl.apiDescription.Provider;
 import io.mdsl.apiDescription.ProviderImplementation;
@@ -298,5 +299,10 @@ public class ServiceSpecificationAdapter implements ServiceSpecification, Servic
 	@Override
 	public void setDescription(String value) {
 		internalSpec.setDescription(value);
+	}
+
+	@Override
+	public EList<OSLOTemplate> getOslos() {
+		return internalSpec.getOslos();
 	}
 }
