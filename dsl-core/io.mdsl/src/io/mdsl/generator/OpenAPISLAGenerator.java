@@ -1,22 +1,13 @@
 package io.mdsl.generator;
 
-import java.io.File;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
-import java.util.List;
 import java.util.Map;
 
 import org.eclipse.emf.common.util.EList;
 import org.eclipse.emf.common.util.URI;
 
-import com.fasterxml.jackson.databind.module.SimpleAbstractTypeResolver;
-
-import io.mdsl.apiDescription.InternalSLA;
-import io.mdsl.apiDescription.LandingZone;
-import io.mdsl.apiDescription.RateLimit;
 import io.mdsl.apiDescription.SLATemplate;
-import io.mdsl.apiDescription.SLO;
-import io.mdsl.apiDescription.SimpleMeasurement;
 import io.swagger.v3.oas.models.info.Info;
 
 import io.swagger.v3.core.util.Yaml;
@@ -85,7 +76,5 @@ public class OpenAPISLAGenerator {
 		return Yaml.pretty(slaMap);
 
 	}
-
-	
 
 }

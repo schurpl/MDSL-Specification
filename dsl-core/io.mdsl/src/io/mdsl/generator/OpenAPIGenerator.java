@@ -1,6 +1,5 @@
 package io.mdsl.generator;
 
-import java.util.Map;
 import java.util.Set;
 
 import org.eclipse.emf.common.util.URI;
