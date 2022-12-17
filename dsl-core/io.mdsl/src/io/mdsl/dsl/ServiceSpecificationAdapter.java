@@ -30,10 +30,12 @@ import org.eclipse.emf.ecore.EReference;
 import org.eclipse.emf.ecore.EStructuralFeature;
 import org.eclipse.emf.ecore.resource.Resource;
 
+import io.mdsl.apiDescription.AlertPolicy;
 import io.mdsl.apiDescription.ChannelContract;
 import io.mdsl.apiDescription.Client;
 import io.mdsl.apiDescription.CommandTypes;
 import io.mdsl.apiDescription.DataContract;
+import io.mdsl.apiDescription.DataSource;
 import io.mdsl.apiDescription.DirectionList;
 import io.mdsl.apiDescription.EventTypes;
 import io.mdsl.apiDescription.EndpointContract;
@@ -47,6 +49,8 @@ import io.mdsl.apiDescription.Orchestration;
 import io.mdsl.apiDescription.Provider;
 import io.mdsl.apiDescription.ProviderImplementation;
 import io.mdsl.apiDescription.SLATemplate;
+import io.mdsl.apiDescription.SLI;
+import io.mdsl.apiDescription.Service;
 import io.mdsl.apiDescription.ServiceSpecification;
 
 public class ServiceSpecificationAdapter implements ServiceSpecification, ServiceSpecificationExtensions {
@@ -304,5 +308,25 @@ public class ServiceSpecificationAdapter implements ServiceSpecification, Servic
 	@Override
 	public EList<OSLOTemplate> getOslos() {
 		return internalSpec.getOslos();
+	}
+
+	@Override
+	public EList<AlertPolicy> getAlertPol() {
+		return internalSpec.getAlertPol();
+	}
+
+	@Override
+	public EList<DataSource> getDataSources() {
+		return internalSpec.getDataSources();
+	}
+
+	@Override
+	public EList<Service> getServices() {
+		return internalSpec.getServices();
+	}
+
+	@Override
+	public EList<SLI> getSlis() {
+		return internalSpec.getSlis();
 	}
 }

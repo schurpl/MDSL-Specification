@@ -57,6 +57,7 @@ Workflow {
 				composedCheck = "io.mdsl.validation.EventValidator"
 				composedCheck = "io.mdsl.validation.FlowValidator"
 				composedCheck = "io.mdsl.validation.ScenarioValidator"
+				composedCheck = "io.mdsl.validation.OpenSloValidator"
 			}
 			
 			junitSupport = {

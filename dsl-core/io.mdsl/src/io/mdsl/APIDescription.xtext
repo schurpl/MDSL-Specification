@@ -18,29 +18,32 @@ grammar io.mdsl.APIDescription with org.eclipse.xtext.common.Terminals
 
 import "http://www.eclipse.org/emf/2002/Ecore" as ecore
 /*  
----
-title: Microservices Domain Specific Language (MDSL) Language Specification
-author: Olaf Zimmermann
-copyright: Olaf Zimmermann, 2018-2022. All rights reserved.
-version: "5.4.5"
----
-*/ 
-
+ * ---
+ * title: Microservices Domain Specific Language (MDSL) Language Specification
+ * author: Olaf Zimmermann
+ * copyright: Olaf Zimmermann, 2018-2022. All rights reserved.
+ * version: "5.4.5"
+ * ---
+ */
 generate apiDescription "http://www.mdsl.io/APIDescription"
 
-ServiceSpecification hidden(WS, ML_COMMENT, SL_COMMENT): 
+ServiceSpecification hidden(WS, ML_COMMENT, SL_COMMENT):
 	'API' 'description' name=ID
-    ('version' svi=SemanticVersioningIdentifier)? // plain STRING
-    ('usage' 'context' reach=Visibility ('for' direction+=DirectionList)?)? // made 'for' optional (test case required)
-	('overview' description=STRING)? 
-    types+=DataContract*
-    links+=LinkContract* 
-    events+=EventTypes* // experimental preview 
-    commands+=CommandTypes* // experimental preview
-	contracts+=(EndpointContract|ChannelContract)* // ChannelContract is AsyncMDSL extension	
-	(slas+= SLATemplate* | oslos += OSLOTemplate*)
-	providers+=(Provider|MessageBroker)* // MessageBroker is AsyncMDSL extension
-	clients+=(Client|MessageEndpoint)* // MessageEndpoint is AsyncMDSL extension
+	('version' svi=SemanticVersioningIdentifier)? // plain STRING
+	('usage' 'context' reach=Visibility ('for' direction+=DirectionList)?)? // made 'for' optional (test case required)
+	('overview' description=STRING)?
+	types+=DataContract*
+	links+=LinkContract*
+	events+=EventTypes* // experimental preview 
+	commands+=CommandTypes* // experimental preview
+	contracts+=(EndpointContract | ChannelContract)* // ChannelContract is AsyncMDSL extension
+	dataSources+=DataSource*
+	services+=Service*
+	alertPol+=AlertPolicy*
+	slis+=SLI*
+	(slas+=SLATemplate* | oslos+=OSLOTemplate*)
+	providers+=(Provider | MessageBroker)* // MessageBroker is AsyncMDSL extension
+	clients+=(Client | MessageEndpoint)* // MessageEndpoint is AsyncMDSL extension
 	gateways+=Gateway* // experimental preview  
 	orchestrations+=Orchestration* // experimental preview
 	realizations+=ProviderImplementation* // experimental preview
@@ -55,156 +58,141 @@ ServiceSpecification hidden(WS, ML_COMMENT, SL_COMMENT):
 // * C) instance-level concepts (provider, client, gateway; implementation)
 // * D) orchestration flows and integration scenarios (experimental)
 
+
+terminal DATE:
+	('0'..'9')+ '-' ('0'..'1') ('0'..'9') '-' ('0'..'3') ('0'..'9') ' ' ('0'..'2') ('0'..'9') ':' ('0'..'5') ('0'..'9')
+	':' ('0'..'5') ('0'..'9');
+
+Double returns ecore::EDouble:
+	INT+ '.' INT*;
+
+terminal OPERATOR:
+	'lte' | 'gte' | 'lt' | 'gt';
+
 OSLOTemplate:
-	'OpenSLOTemplate' 
-	name=ID 'displayed' 'as' displayName=STRING
-	// Think about description represenattion
-	'part' 'of' service= Service
-	'indicator' indicator=SLI
-	'in' 'time-window' timeWindow = TimeWindow
-	'budgeted' budgetingMethod = BudgetingMethod
+	'OpenSLOTemplate'
+	name=ID ('displayed' 'as' displayName=STRING)?
+	('description' description=STRING)?
+	'part' 'of' service=[Service]
+	'indicator' (builtInIndicator=SLI | externalIndicator=[SLI])
+	'in' 'time-window' timeWindow=TimeWindow
+	'budgeted' budgetingMethod=BudgetingMethod
 	'with' 'objectives' objectives+=Objective
-	'with' 'Alert' 'Policies' alertPol = AlertPolicy
-;
+	'with' 'Alert' 'Policies' (builtInalertPol=AlertPolicy | externalAlertPol=[AlertPolicy]);
 
 Duration:
 	value=INT
-	unitOfMeasure = ('m'|'h'|'d'|'w'|'M'|'Q'|'Y')
-;
+	unitOfMeasure=('m' | 'h' | 'd' | 'w' | 'M' | 'Q' | 'Y');
 
+Boolean returns ecore::EBoolean:
+	('true' | 'false');
+	
 TimeWindow:
-	duration = Duration
-	'is' 'rolling' rolling_=BOOLEAN
-	(calendarBased = CalendarBased)?
-;
-BOOLEAN returns ecore::EBoolean:
-	'true' | 'false'
-;
+	duration=Duration
+	(calendarBased=CalendarBased | 'is' 'rolling' rolling=Boolean);
 
 CalendarBased:
-	'starts' 'at' startDate = DATE
-	'in' 'timeZone' timeZone = STRING
-;
-
-terminal DATE:
-	('0'..'9')+'-'('0'..'1')('0'..'9')'-'('0'..'3')('0'..'9')' ' ('0'..'2')('0'..'9')':'('0'..'5')('0'..'9')':'('0'..'5')('0'..'9')
-;
-
-Double returns ecore::EDouble:
-	INT+'.'INT*
-;
+	'starts' 'at' startDate=DATE
+	'in' 'timeZone' timeZone=STRING;
 
 AlertPolicy:
 	'Alert' 'Policy'
-	name=ID 'displayed' 'as' displayName = STRING
-	//Description überlegen
-	'alert' 'when' 'no' 'data' nodata= BOOLEAN
-	'alert' 'when' 'resolved' resolved = BOOLEAN
-	'alert' 'when' 'breaching' breaching = BOOLEAN
+	name=ID ('displayed' 'as' displayName=STRING)?
+	('description' description=STRING)?
+	'alert' 'when' 'no' 'data' nodata=Boolean
+	'alert' 'when' 'resolved' resolved=Boolean
+	'alert' 'when' 'breaching' breaching=Boolean
 	'conditions' conditions+=AlertCondition
-	'notifies' notificationTarget = AlertNotificationTarget
-;
+	'notifies' notificationTarget=AlertNotificationTarget;
 
 AlertNotificationTarget:
 	'Alert' 'Notification' 'Target'
-	name=ID 'displayed' 'as' displayName = STRING
+	name=ID ('displayed' 'as' displayName=STRING)?
 	'target' target=STRING
-	'description' description = STRING
-	
+	('description' description=STRING)? // 150 Char Limit schauen ob umsetzbar in Grammar
 ;
+
 AlertCondition:
 	'Alert' 'Condition'
-	name=ID 'displayed' 'as' displayName = STRING
-	//Description
+	name=ID ('displayed' 'as' displayName=STRING)?
+	('description' description=STRING)?
 	'severity' severity=STRING
-	'condition' condition = Condition //Check if other Conditions than burnrate are applicapble
-	
+	'condition' condition=Condition // Check if other Conditions than burnrate are applicapble
 ;
 
 Condition:
 	'Condition'
 	name=ID
-	'operator' operator = OPERATOR 
+	'operator' operator=OPERATOR
 	'with' 'threshold' threshold=INT
-	'look' 'back' lookBack = Duration
-	'alert' 'after' alertAfter = Duration
-;
-	
-terminal OPERATOR:
-	'lte'|'gte' |'lt' |'gt'
-;
+	'look' 'back' lookBack=Duration
+	'alert' 'after' alertAfter=Duration;
+
 Objective:
 	name=ID
-	 'with' 'operator' operator = OPERATOR
-	 coompValue?= Double
-	'with' 'target' target= Double
-	'with' 'target' 'percent' targetPer = Double
-	'with' 'SiliceTarget' sliceTarget = Double
-	'with' 'SiliceWindow' (numeric = INT | durationBased = Duration)
-;
+	('with' 'operator' operator=OPERATOR compValue=Double)?
+	 // Nur verwenden wenn in der zugehörigen SLI eine Threshold metric verwendet wird (Syntax Check o.ä.)
+	('with' 'target' target=Double | 'with' 'target' 'percent' targetPer=Double)
+	// Time Slices nur benötigt wenn in der SLI als Budgeting Method Time Slices ausgewählt sind
+	('with' 'SiliceTarget' sliceTarget=Double)?
+	('with' 'SiliceWindow' (numeric=INT | durationBased=Duration))?;
+
 Service:
 	'Service'
-	name=ID 'displayed' 'as' displayName = STRING
-	'purpose:' purpose = STRING
-;
+	name=ID ('displayed' 'as' displayName=STRING)?
+	('purpose:' purpose=STRING)?;
 
 SLI:
 	'SLI'
-	name=ID 'displayed' 'as' displayName= STRING
-	//Description überlegen
-	'with' (tMetric = Thresholdmetric | rMetric = RatioMetric )
-	
-;
+	name=ID ('displayed' 'as' displayName=STRING)?
+	('description' description=STRING)?
+	'with' (tMetric=Thresholdmetric | rMetric=RatioMetric);
 
 Thresholdmetric:
-	'Threshold' 'Methric' 'from' metricSource = MetricSource
-	'type' type = STRING
-	'spec' spec = STRING  
-;
+	'Threshold' 'Metric' 'from' metricSource=MetricSource
+	'spec' spec=STRING;
 
 RatioMetric:
 	'Ratio' 'Metric'
-	'counter' counter = BOOLEAN
-	'good' good = MetricSource
-	'bad' bad = MetricSource
-	'total' total = MetricSource
-	'with' 'raw' 'type' rType = ('success' | 'failure')
-	'raw' raw = MetricSource
-;
+	'counter' counter=Boolean
+	('total' total=MetricSource
+	('good' good=MetricSource | 'bad' bad=MetricSource) | 'raw' raw=MetricSource)
+	('with' 'raw' 'type' rType=('success' | 'failure'))?;
 
 MetricSource:
-	('dataSource' dataSource = DataSource)?
-	'type' type = STRING
-	'with' 'spec' spec = STRING
+	('dataSource' dataSource=[DataSource])?
+	('type' type=STRING)? // //Predefinded type Prometeus etc. 
+	'with' 'spec' spec=STRING // how to obtain data specs means querry url in case of Prometheus
 ;
+
 DataSource:
-	'Data' 'Source' name=ID 'displayed' 'as' displayName= STRING
-	'description' description= STRING
-	'type' type = STRING // Muss man selber predifinen
-	'connection' 'details' // Mann soll spezifizieren was man tut um an datan zu kommen
-;
+	'Data' 'Source' name=ID ('displayed' 'as' displayName=STRING)?
+	('description' description=STRING)?
+	'type' type=STRING // Predefined type Prometeus etc. 
+	'connection' 'details' 'URL' url=STRING;
 
 BudgetingMethod:
-	'Occurrences' | 'Timeslices' | 'RatioTimeslices'
-;
+	'Occurrences' | 'Timeslices' | 'RatioTimeslices';
 
 
 
-Visibility: 'PUBLIC_API' | 'COMMUNITY_API' | 'SOLUTION_INTERNAL_API' | STRING;
+//-----------------------------------------------------------
+Visibility:
+	'PUBLIC_API' | 'COMMUNITY_API' | 'SOLUTION_INTERNAL_API' | STRING;
 
 DirectionList:
-	primaryDirection=Direction ('and' otherDirection=Direction)?
-;
+	primaryDirection=Direction ('and' otherDirection=Direction)?;
 
-Direction: 'FRONTEND_INTEGRATION' | 'BACKEND_INTEGRATION' | STRING;
+Direction:
+	'FRONTEND_INTEGRATION' | 'BACKEND_INTEGRATION' | STRING;
 
-SemanticVersioningIdentifier: STRING; // format could be checked by API linters
+SemanticVersioningIdentifier:
+	STRING; // format could be checked by API linters
 
 // *** Part A: data contract/types 
-
 DataContract:
-	'data' 'type' name=ID 
-	('version' svi=SemanticVersioningIdentifier)? 
+	'data' 'type' name=ID
+	('version' svi=SemanticVersioningIdentifier)?
 	structure=ElementStructure
 	default=DefaultValue? // still an experimental preview
 ;
@@ -212,199 +200,173 @@ DataContract:
 // rule name could also be "RelationType", as a relation is a typed link in context
 LinkContract:
 	'relation' 'type' name=ID // this is the type info
-	('version' svi=SemanticVersioningIdentifier)? 
-	'targets' (ept=[EndpointContract] | ('any'|'external') 'resource' ('at' urn=STRING)?)
-	('action' operation=ID ('input' dataType=[DataContract])?)?
-	 // HTTP Verb and MediaType added in HTTP binding for now
+	('version' svi=SemanticVersioningIdentifier)?
+	'targets' (ept=[EndpointContract] | ('any' | 'external') 'resource' ('at' urn=STRING)?)
+	('action' operation=ID ('input' dataType=[DataContract])?)?// HTTP Verb and MediaType added in HTTP binding for now
 ;
 
-EventTypes: 
+EventTypes:
 	'event' 'type' events+=EventType (',' events+=EventType)* // default?
 ;
 
-EventType:  
-	name=ID ( 
-	('version' svi=SemanticVersioningIdentifier)? // version can only be given if structure is there
+EventType:
+	name=ID (('version' svi=SemanticVersioningIdentifier)? // version can only be given if structure is there
 	content=ElementStructure)? // the domain data reported, part of published language
 ;
 
 CommandTypes:
-	'command' 'type' commands+=CommandType (',' commands+=CommandType)*
-;
+	'command' 'type' commands+=CommandType (',' commands+=CommandType)*;
 
 CommandType:
-	name=ID 
-	('version' svi=SemanticVersioningIdentifier)? 
+	name=ID
+	('version' svi=SemanticVersioningIdentifier)?
 	(subject=ElementStructure)? // the in/out data or the business object/item processed
 	// default?
 ;
 
-
 // *** Part B: service endpoint contracts (with operations)
-
-ElementStructure: 
-	pf=ParameterForest | pt=ParameterTree | apl=AtomicParameterList  | np=SingleParameterNode
-;
+ElementStructure:
+	pf=ParameterForest | pt=ParameterTree | apl=AtomicParameterList | np=SingleParameterNode;
 
 ParameterForest:
 	classifier=PatternStereotype?
-	'[' ptl=ParameterTreeList ']' 
-	;
+	'[' ptl=ParameterTreeList ']';
 
-
- 
 // Common parts:
-
 ParameterTreeList:
-	first=ParameterTree (';' next+=ParameterTree)*
-;
+	first=ParameterTree (';' next+=ParameterTree)*;
 
 ParameterTree:
-	classifier=PatternStereotype? 
-	(name=STRING':')?
-	'{' 
-	  first=TreeNode ((','|'|') nexttn+=TreeNode)* 
-	'}' 
-	card=Cardinality? 
-;
+	classifier=PatternStereotype?
+	(name=STRING ':')?
+	'{'
+	first=TreeNode ((',' | '|') nexttn+=TreeNode)*
+	'}'
+	card=Cardinality?;
 
 TreeNode:
-	pn=SingleParameterNode | apl=AtomicParameterList | children=ParameterTree
-;
+	pn=SingleParameterNode | apl=AtomicParameterList | children=ParameterTree;
 
-SingleParameterNode: 
+SingleParameterNode:
 	// Markdown-ish syntax for link reference was experimental, R<> caused problems earlier 
 	genP=GenericParameter | atomP=AtomicParameter | tr=TypeReference // | lr=LinkReference
 ;
 
-GenericParameter: 
+GenericParameter:
 	name=STRING // this makes it possible to only have a name/id, but no role (yet)
 	| p='P' // unspecified, P stands for 'Parameter' or 'PayloadPart' or 'Placeholder'
 	| name=STRING ":" 'P' // this option is not documented and tested much; could deprecate
 ;
 
 /*
-// experimental, causes compatibility issues (dcref in TypeReference rule might be null)
-LinkTypeReference:
-	'[' lcref=[LinkContract] ']' 
-;
-*/ 
-
-TypeReference: 
-	classifier=PatternStereotype? 
-	(name=STRING':')? (dcref=[DataContract] /* lref=LinkTypeReference */)
-	card=Cardinality?
-;
+ * // experimental, causes compatibility issues (dcref in TypeReference rule might be null)
+ * LinkTypeReference:
+ * 	'[' lcref=[LinkContract] ']' 
+ * ;
+ */
+TypeReference:
+	classifier=PatternStereotype?
+	(name=STRING ':')? (dcref=[DataContract] /* lref=LinkTypeReference */ )
+	card=Cardinality?;
 
 AtomicParameterList:
-	classifier=PatternStereotype? 
-	(name=STRING':')? 
-	'(' first=AtomicParameter ((','|'|') nextap+=AtomicParameter)* ')' 
-	card=Cardinality? 	
-;
+	classifier=PatternStereotype?
+	(name=STRING ':')?
+	'(' first=AtomicParameter ((',' | '|') nextap+=AtomicParameter)* ')'
+	card=Cardinality?;
 
-AtomicParameter: 
-	classifier=PatternStereotype? 
+AtomicParameter:
+	classifier=PatternStereotype?
 	rat=RoleAndType
-	card=Cardinality?
-;
+	card=Cardinality?;
 
-RoleAndType: 
+RoleAndType:
 	// experimental  |'->' ec=[EndpointContract] taken out again
-    (name=STRING':')? role=ParameterRole ('<'btype=BasicDataType'>' )? 
-;
-
+	(name=STRING ':')? role=ParameterRole ('<' btype=BasicDataType '>')?;
 
 DefaultValue:
-	'default' 'is' default=STRING
-;
+	'default' 'is' default=STRING;
 
 PatternStereotype:
-    '<<' (pattern=MapPattern | eip=EipPattern | name=ID) '>>' // TODO (future work): either name in this rule or STRING in MapPattern rule can go
+	'<<' (pattern=MapPattern | eip=EipPattern | name=ID) '>>' // TODO (future work): either name in this rule or STRING in MapPattern rule can go
 ;
 
 EipPattern:
-	'Command_Message' | 'Document_Message' | 'Event_Message'
-;
+	'Command_Message' | 'Document_Message' | 'Event_Message';
 
 MapPattern:
-	'API_Key' | 'Context_Representation' | 'Error_Report' | 'Request_Bundle' | 'Request_Condition' | 'Wish_List' | 'Wish_Template' 
-	| 'Embedded_Entity' | 'Linked_Information_Holder' | 'Annotated_Parameter_Collection' | 'Pagination' 
-	| 'Data_Element' | 'Identifier_Element' | 'Id_Element' | 'Link_Element' | 'Metadata_Element'  | 'Control_Metadata' | 'Aggregated_Metadata' | 'Provenance_Metadata' 
+	'API_Key' | 'Context_Representation' | 'Error_Report' | 'Request_Bundle' | 'Request_Condition' | 'Wish_List' |
+	'Wish_Template'
+	| 'Embedded_Entity' | 'Linked_Information_Holder' | 'Annotated_Parameter_Collection' | 'Pagination'
+	| 'Data_Element' | 'Identifier_Element' | 'Id_Element' | 'Link_Element' | 'Metadata_Element' | 'Control_Metadata' |
+	'Aggregated_Metadata' | 'Provenance_Metadata'
 	| 'Command' | 'Response_Bundle' | 'Version_Identifier'
-	| STRING  
-;
+	| STRING;
 
 ParameterRole:
-	  'D' // (Atomic) Data Value, Entity or Value Object from DDD
+	'D' // (Atomic) Data Value, Entity or Value Object from DDD
 	| 'MD' // // e.g. in Annotated Parameter Collection: {MD,(MD,D),(MD,D),...}
 	| 'ID' // Identifier (globally or locally unique, not network accessible
 	| 'L' // e.g. URI. Linked Information Holder: {(ID,D1,..,DN,L} for HATEOAS, e.g. "nextPage":Link<Customer>* 
 	| 'Data'
 	| 'Metadata'
 	| 'Identifier'
-	| 'Link' 
-//	| ActionCode
+	| 'Link'//	| ActionCode
 ;
 
 /*
-ActionCode:
-	'CREATE' | 'FULL_UPDATE' | 'PARTIAL_UPDATE' | 'DELETE' | 'GET' | 'MORE_DATA' | other=STRING
-;
-*/ 
-
+ * ActionCode:
+ * 	'CREATE' | 'FULL_UPDATE' | 'PARTIAL_UPDATE' | 'DELETE' | 'GET' | 'MORE_DATA' | other=STRING
+ * ;
+ */
 BasicDataType:
 	// TODO (future work): specify and document value ranges (same as OAS? CloudEvents?) abstract level or binding? how about 'date'?
- 	'bool' | 'int' | 'long' | 'double' | 'string' | 'raw' | 'void' // 'record', 'map' and 'array' do not make sense here
-	;
-
-Cardinality:
-	zeroOrOne='?' | zeroOrMore='*' | atLeastOne='+' | exactlyOne='!'
+	'bool' | 'int' | 'long' | 'double' | 'string' | 'raw' | 'void' // 'record', 'map' and 'array' do not make sense here
 ;
 
+Cardinality:
+	zeroOrOne='?' | zeroOrMore='*' | atLeastOne='+' | exactlyOne='!';
 
 // *** Part B: service endpoint contracts (with operations)
-
 EndpointContract:
-	'endpoint' 'type' name=ID 
-	('version' svi=SemanticVersioningIdentifier)? 
+	'endpoint' 'type' name=ID
+	('version' svi=SemanticVersioningIdentifier)?
 	// TODO (future work): support multiple flows and scenarios ('+= ...*')
-	('supports' ('flow' flow=[Orchestration]|'scenario'scenario=[IntegrationScenario]))?
+	('supports' ('flow' flow=[Orchestration] | 'scenario' scenario=[IntegrationScenario]))?
 	('serves' 'as' primaryRole=ResourceRole ('and' otherRoles+=ResourceRole)* 'role'?)?
 	sp=SecurityPolicy?
 	('exposes' ops+=Operation+)? // optional because early incomplete specifications do not have to expose any operations 
-	('receives' events+=Event+)?
-;
+	('receives' events+=Event+)?;
 
 // added non MAPs: MUTABLE_COLLECTION_RESOURCE (secondary role of any type of INFORMATION_HOLDER_RESOURCE), 
 // stereotypes for 'STATEFUL_PROCESSING_RESOURCE' and 'STATELESS_PROCESSING_RESOURCE' (CFs only), VALIDATION_RESOURCE, TRANSFORMATION_RESOURCE
-ResourceRole: 'PROCESSING_RESOURCE' | 'INFORMATION_HOLDER_RESOURCE' | 'OPERATIONAL_DATA_HOLDER' | 'MASTER_DATA_HOLDER' | 'REFERENCE_DATA_HOLDER' | 'DATA_TRANSFER_RESOURCE' | 'LINK_LOOKUP_RESOURCE' 
-	| 'STATEFUL_PROCESSING_RESOURCE' | 'STATELESS_PROCESSING_RESOURCE' | 'VALIDATION_RESOURCE' | 'TRANSFORMATION_RESOURCE' | 'COLLECTION_RESOURCE' | 'MUTABLE_COLLECTION_RESOURCE' | STRING
-;
+ResourceRole:
+	'PROCESSING_RESOURCE' | 'INFORMATION_HOLDER_RESOURCE' | 'OPERATIONAL_DATA_HOLDER' | 'MASTER_DATA_HOLDER' |
+	'REFERENCE_DATA_HOLDER' | 'DATA_TRANSFER_RESOURCE' | 'LINK_LOOKUP_RESOURCE'
+	| 'STATEFUL_PROCESSING_RESOURCE' | 'STATELESS_PROCESSING_RESOURCE' | 'VALIDATION_RESOURCE' |
+	'TRANSFORMATION_RESOURCE' | 'COLLECTION_RESOURCE' | 'MUTABLE_COLLECTION_RESOURCE' | STRING;
 
-Event: 
+Event:
 	'event'
 	type=[EventType]
-	('version' svi=SemanticVersioningIdentifier)?
-;
+	('version' svi=SemanticVersioningIdentifier)?;
 
 Operation:
-	'operation' 
-	name=ID 
+	'operation'
+	name=ID
 	('version' svi=SemanticVersioningIdentifier)?
-	('with' 'responsibility' responsibility=OperationResponsibility)? 
+	('with' 'responsibility' responsibility=OperationResponsibility)?
 	// TODO (future work):  add ('supporting' stakeholder=STRING)? // for actor from story
-	('in'  mep=MessageExchangePattern 'conversation')? 
+	('in' mep=MessageExchangePattern 'conversation')?
 	('expecting' requestMessage=DataTransferRepresentation)? // request message is optional
-	('delivering' responseMessage=DataTransferRepresentation 
-	  ('links' relations+=RelationshipLink+)? // optional within 'delivering'
-	  ('reporting' reports=StatusReports)? // optional within 'delivering'
+	('delivering' responseMessage=DataTransferRepresentation
+	('links' relations+=RelationshipLink+)? // optional within 'delivering'
+	('reporting' reports=StatusReports)? // optional within 'delivering'
 	)? // response message is optional 
 	('transitions' st=StateTransition)? // or IDs, [Refs], to be defined above? [R] export as OpenAPI comment?
 	('emitting' events+=Event+)? // or 'publishing'? 'sending'? `producing`?
 	('compensated' 'by' undo=[Operation])? // could also be expressed as link relation
-	('protected' 'by' policies=SecurityPolicies)?
-;
+	('protected' 'by' policies=SecurityPolicies)?;
 
 // note: CML is more expressive here, see https://contextmapper.org/docs/aggregate/
 // methods can define read, read-write, etc. (done via MAP role decorators here); state machine is on Aggregate level in CML
@@ -413,118 +375,102 @@ StateTransition:
 ;
 
 RelationshipLink:
-	name=STRING ':' lcref=[LinkContract]
-;
+	name=STRING ':' lcref=[LinkContract];
 
 StatusReports:
-	reportList+=StatusReport+
-;
+	reportList+=StatusReport+;
 
 StatusReport:
-	('status' | 'error' | 'analytics') name=ID reportData=ElementStructure?
-;
+	('status' | 'error' | 'analytics') name=ID reportData=ElementStructure?;
 
 SecurityPolicies:
-	policyList+=SecurityPolicy+
-;
+	policyList+=SecurityPolicy+;
 
-SecurityPolicy: 
-	 'policy' name=ID securityObject=ElementStructure?
-;
+SecurityPolicy:
+	'policy' name=ID securityObject=ElementStructure?;
 
 // TODO might need add/remove marker for COLLECTION_RESOURCE vs. its elements/items here (for HTTP binding)
 // if added, implement new ones in validators and OAS generator, use/document variants consistently, document them
 // consider aliases such as "FULL_UPDATE_OPERATION" and "PARTIAL_UPDATE_OPERATION"
-OperationResponsibility: cf='COMPUTATION_FUNCTION' | sco='STATE_CREATION_OPERATION' | ro='RETRIEVAL_OPERATION' | sto='STATE_TRANSITION_OPERATION' | ep='EVENT_PROCESSOR' | bap='BUSINESS_ACTIVITY_PROCESSOR' | sro='STATE_REPLACEMENT_OPERATION' | sdo='STATE_DELETION_OPERATION' | other=STRING;
+OperationResponsibility:
+	cf='COMPUTATION_FUNCTION' | sco='STATE_CREATION_OPERATION' | ro='RETRIEVAL_OPERATION' | sto=
+	'STATE_TRANSITION_OPERATION' | ep='EVENT_PROCESSOR' | bap='BUSINESS_ACTIVITY_PROCESSOR' | sro=
+	'STATE_REPLACEMENT_OPERATION' | sdo='STATE_DELETION_OPERATION' | other=STRING;
 
-MessageExchangePattern: 'ONE_WAY' | 'REQUEST_REPLY' | 'NOTIFICATION' | STRING; // TODO (future work) add SERVER_SENT_EVENTS and gRPC 1:n, n:1, n:m streaming?  
-	
+MessageExchangePattern:
+	'ONE_WAY' | 'REQUEST_REPLY' | 'NOTIFICATION' | STRING; // TODO (future work) add SERVER_SENT_EVENTS and gRPC 1:n, n:1, n:m streaming?  
+
 // TODO (future work) make payload optional (but header or payload must be there); workaround: 'P' or D<void> payload
 DataTransferRepresentation:
-	('headers' headers=ElementStructure)? 
+	('headers' headers=ElementStructure)?
 	'payload' payload=ElementStructure // this could be an embedded XSD or JSON Schema (or an external one referenced via URI, see V4.x bindings)
-	('structured' 'as' ts=TypeSystem)? 
-;
+	('structured' 'as' ts=TypeSystem)?;
 
-TypeSystem: 
-	'MAP_TYPE' | 'JOLIE_TYPE' | 'JSON_SCHEMA' | 'XML_SCHEMA' |'PROTOCOL_BUFFER' | 'AVRO_SCHEMA' | 'THRIFT_TYPE' | 'GRAPHQL_SDL' | 'OTHER' | STRING 
-;
+TypeSystem:
+	'MAP_TYPE' | 'JOLIE_TYPE' | 'JSON_SCHEMA' | 'XML_SCHEMA' | 'PROTOCOL_BUFFER' | 'AVRO_SCHEMA' | 'THRIFT_TYPE' |
+	'GRAPHQL_SDL' | 'OTHER' | STRING;
 
 // AsyncMDSL extensions: 
-
 // TODO (future work) add flow/scenario link (see endpoint contract)?
 ChannelContract:
 	'channel' name=ID
 	// not yet:	('supports' ('flow' flow=[Orchestration]|'scenario'scenario=[IntegrationScenario]))? // could go from '?' to '*' here
 	('of' 'type' types+=ChannelType (',' types+=ChannelType)*)?
 	('delivery' 'guarantee' quality=DeliveryGuarantee)?
-	conversationType=(RequestReplyChannel|OneWayChannel) // TODO a channel should be able to transfer messages of multiple (data) types
+	conversationType=(RequestReplyChannel | OneWayChannel) // TODO a channel should be able to transfer messages of multiple (data) types
 ;
 
 enum ChannelType:
-	POINT_TO_POINT | PUBLISH_SUBSCRIBE | DATA_TYPE | INVALID_MESSAGE | DEAD_LETTER | GUARANTEED_DELIVERY
-;
+	POINT_TO_POINT | PUBLISH_SUBSCRIBE | DATA_TYPE | INVALID_MESSAGE | DEAD_LETTER | GUARANTEED_DELIVERY;
 
 // Xtext initializes 'quality' using the first value of this enum, which will act as null and default value
 enum DeliveryGuarantee:
-	UNKNOWN | AT_LEAST_ONCE | AT_MOST_ONCE | EXACTLY_ONCE 
-;
+	UNKNOWN | AT_LEAST_ONCE | AT_MOST_ONCE | EXACTLY_ONCE;
 
 BindingValue:
-	{BindingValue} str=STRING | {BindingValue} number=INT | bool=('true' | 'false')
-;
+	{BindingValue} str=STRING | {BindingValue} number=INT | bool=('true' | 'false');
 
 BindingParameter:
-	name=STRING ':' value=(BindingValue | BindingParams)
-;
+	name=STRING ':' value=(BindingValue | BindingParams);
 
 BindingParams:
 	'{'
-		params+=BindingParameter
-		(',' params+=BindingParameter)*
-	'}'
-;
+	params+=BindingParameter
+	(',' params+=BindingParameter)*
+	'}';
 
 BasicParameterWithDescription:
-	paramName=ID ':' type=BasicDataType (',' description=STRING)?
-;
+	paramName=ID ':' type=BasicDataType (',' description=STRING)?;
 
 ChannelPathWithParams:
 	'path' path=STRING
-	('with' 
-		params+=BasicParameterWithDescription
-		(',' params+=BasicParameterWithDescription)?
-	)?
-;
+	('with'
+	params+=BasicParameterWithDescription
+	(',' params+=BasicParameterWithDescription)?)?;
 
 RequestReplyChannel:
 	request=RequestChannel
-	reply=ReplyChannel
-
-;
+	reply=ReplyChannel;
 
 RequestChannel:
-	'request' 'message' name=ID 
-		(('description' description=STRING)? &
-		'on' path=ChannelPathWithParams)
-		'expecting' payload=Payload
-		('where' whereClauses+=WhereClauses (',' whereClauses+=WhereClauses)*)?
-		('bindings' 'for' protocol=ProtocolBinding bindings=BindingParams)? 
-;
+	'request' 'message' name=ID
+	(('description' description=STRING)? &
+	'on' path=ChannelPathWithParams)
+	'expecting' payload=Payload
+	('where' whereClauses+=WhereClauses (',' whereClauses+=WhereClauses)*)?
+	('bindings' 'for' protocol=ProtocolBinding bindings=BindingParams)?;
 
 ReplyChannel:
-	'reply' 'message' name=ID 
-		(('description' description=STRING)? &
-		'on' path=ChannelPathWithParams)
-		'delivering' payload=Payload
-		('where' whereClauses+=WhereClauses (',' whereClauses+=WhereClauses)*)?
-		('bindings' 'for' protocol=ProtocolBinding bindings=BindingParams)?
-;
+	'reply' 'message' name=ID
+	(('description' description=STRING)? &
+	'on' path=ChannelPathWithParams)
+	'delivering' payload=Payload
+	('where' whereClauses+=WhereClauses (',' whereClauses+=WhereClauses)*)?
+	('bindings' 'for' protocol=ProtocolBinding bindings=BindingParams)?;
 
 Payload:
-	schema=DataTransferRepresentation	
-	('as' messageType=MessageType)?
-;
+	schema=DataTransferRepresentation
+	('as' messageType=MessageType)?;
 
 // TODO acceptsAndProduces= (now) or acceptsAndProduces?= (see other options)?
 OneWayChannel:
@@ -532,112 +478,89 @@ OneWayChannel:
 	'on' path=ChannelPathWithParams)
 	(subscribe?='accepts' | publish?='produces' | acceptsAndProduces='accepts' 'and' 'produces') message=Message // TODO more than one (data) type?
 	('where' whereClauses+=WhereClauses (',' whereClauses+=WhereClauses)*)? // impact on where clauses if multiple message types can be exchanged?
-	('bindings' 'for' protocol=ProtocolBinding bindings=BindingParams)?
-;
+	('bindings' 'for' protocol=ProtocolBinding bindings=BindingParams)?;
 
 Message:
-	'message' name=ID 
+	'message' name=ID
 	('description' description=STRING)?
-	(deliveringPayload?='delivering' | expectingPayload?='expecting') payload=Payload
-;
+	(deliveringPayload?='delivering' | expectingPayload?='expecting') payload=Payload;
 
 WhereClauses:
 	MessageExpireWhereClause
-	|	SequenceIdWhereClause
-    |	CorrelationIdWhereClause
-;
+	| SequenceIdWhereClause
+	| CorrelationIdWhereClause;
 
 MessageExpireWhereClause:
-	'MESSAGE_EXPIRES' 'in' messageExpire=INT messageExpireUnit=MessageExpireUnit
-;
+	'MESSAGE_EXPIRES' 'in' messageExpire=INT messageExpireUnit=MessageExpireUnit;
 
 SequenceIdWhereClause:
-	'SEQUENCE_ID' 'is' expression=STRING
-;
+	'SEQUENCE_ID' 'is' expression=STRING;
 
 CorrelationIdWhereClause:
-	'CORRELATION_ID' 'is' source=STRING
-;
+	'CORRELATION_ID' 'is' source=STRING;
 
 enum MessageExpireUnit:
 	s | m // seconds or minutes
 ;
 
 enum MessageType:
-	COMMAND_MESSAGE | EVENT_MESSAGE | DOCUMENT_MESSAGE
-;
-
+	COMMAND_MESSAGE | EVENT_MESSAGE | DOCUMENT_MESSAGE;
 
 // *** C.1: provider/endpoint part 
-
 Provider:
 	'API' 'provider' // | ms= 'Message' 'sender' (MOM support was experimental)
 	name=ID
-	('version' svi=SemanticVersioningIdentifier)? 
+	('version' svi=SemanticVersioningIdentifier)?
 	epl+=EndpointList+ // [Q] is list here (+) and in EndpointInstance needed (*)? 
 	('under' 'conditions' tsandcs=STRING | 'with' 'provider' sla=SLA)? // neither Ts&Cs nor SLA must be present
-	('provider' 'governance'  evolStrat=EvolutionStrategy)? 
-;
+	('provider' 'governance' evolStrat=EvolutionStrategy)?;
 
-EndpointList:	
+EndpointList:
 	'offers' contract=[EndpointContract] // one endpoint can only offer a single contract (but provider can have multiple endpoints)
 	endpoints+=EndpointInstance* // optional; several endpoints per contract mean redundant deployment (or different SLAs for same functionality) 
 ;
 
-EndpointInstance: 
-	'at' 'endpoint' 'location' location=STRING  
+EndpointInstance:
+	'at' 'endpoint' 'location' location=STRING
 	pb+=TechnologyBinding+ // changed from * to + 
 	('with' 'endpoint' sla=SLA)? // SLA is optional
-	('endpoint' 'governance'  evolStrat=EvolutionStrategy)?
-;
+	('endpoint' 'governance' evolStrat=EvolutionStrategy)?;
 
 // AsyncMDSL: 
-
 MessageBroker:
 	'message' 'broker' name=ID
 	('description' description=STRING)?
-	('exposes' epl+=AsyncEndpoint (',' epl+=AsyncEndpoint)?)+
-	
-;
+	('exposes' epl+=AsyncEndpoint (',' epl+=AsyncEndpoint)?)+;
 
 AsyncEndpoint:
 	contracts+=[ChannelContract] (',' contracts+=[ChannelContract])*
 	'at' 'location' location=STRING
 	pb=TechnologyBinding
 	('bindings' bindings=BindingParams)?
-	('policy' name=ID 'realized' 'using' securityPolicy=OASSecurity ('in' securityPolicyExpression=STRING)?)? 
-;
-
+	('policy' name=ID 'realized' 'using' securityPolicy=OASSecurity ('in' securityPolicyExpression=STRING)?)?;
 
 // ** technology binding (simple/advanced)
-
 TechnologyBinding:
-	'via' 'protocol' protBinding=ProtocolBinding 
-;
+	'via' 'protocol' protBinding=ProtocolBinding;
 
 ProtocolBinding:
-	http=HTTPBinding | java=JavaBinding | grpc=GRPCBinding | other=OtherBinding
-;
+	http=HTTPBinding | java=JavaBinding | grpc=GRPCBinding | other=OtherBinding;
 
 HTTPBinding:
-	http='HTTP' ('static'|'dynamic')? 'binding' eb+=HTTPResourceBinding+
-;
+	http='HTTP' ('static' | 'dynamic')? 'binding' eb+=HTTPResourceBinding+;
 
 HTTPResourceBinding:
 	// decided not make resource name=ID ... optional (used in binding)
-    'resource' name=ID ('at' uri=STRING)? (tB+=HTTPTypeBinding* opsB+=HTTPOperationBinding+)?
-;
+	'resource' name=ID ('at' uri=STRING)? (tB+=HTTPTypeBinding* opsB+=HTTPOperationBinding+)?;
 
-CustomMediaType: 
+CustomMediaType:
 	// TODO (future work) support full RFC as enum and do more with custom MIME types (required for REST maturity level 3)
-	'media' 'type' name=ID 'as' value=STRING 
-;
+	'media' 'type' name=ID 'as' value=STRING;
 
 HTTPTypeBinding:
 	CustomMediaType
 	| 'data' 'type' dt=[DataContract] 'to' (mt+=[CustomMediaType] | smt+=StandardMediaType)+
-	| 'relation' 'type' lt=[LinkContract] 'to' hml=HypermediaLink 
-	// anything to be bound for event types and command types (newer features)? 
+	| 'relation' 'type' lt=[LinkContract] 'to' hml=HypermediaLink// anything to be bound for event types and command types (newer features)? 
 ;
 
 StandardMediaType:
@@ -645,9 +568,8 @@ StandardMediaType:
 ;
 
 HypermediaLink: // this is the DAP concept from "REST in Practice" 
-	// TODO (future work) use or reference JSON-LS or HAL or IANA or ALPS or ...?
-	'{' (local=[HTTPResourceBinding]|external=STRING) (',' verb=HTTPVerb (',' cmt=[CustomMediaType])?)? '}'
-;
+// TODO (future work) use or reference JSON-LS or HAL or IANA or ALPS or ...?
+	'{' (local=[HTTPResourceBinding] | external=STRING) (',' verb=HTTPVerb (',' cmt=[CustomMediaType])?)? '}';
 
 HTTPOperationBinding:
 	// would like to reference [Operation] here; Xtext runs through but editor does not show references (?)  
@@ -656,96 +578,82 @@ HTTPOperationBinding:
 	reportBindings+=ReportBinding* // TODO for Java (and other technologies)
 	securityBindings+=SecurityBinding* // TODO for other remoting technologies
 	('accepts' inContentTypes=MediaTypeList)?
-	('replies' outContentTypes=MediaTypeList)?
-;
+	('replies' outContentTypes=MediaTypeList)?;
 
 MediaTypeList:
-	(cmt+=[CustomMediaType] | smt+=StandardMediaType)+
-;
+	(cmt+=[CustomMediaType] | smt+=StandardMediaType)+;
 
 HTTPGlobalParameterBinding:
-	'all' 'elements' 'realized' 'as' parameterMapping=HTTPParameter 'parameters'
-;
+	'all' 'elements' 'realized' 'as' parameterMapping=HTTPParameter 'parameters';
 
 // would like to use [ElementStructure] here but it does not have name=ID, 5.0.2 STRING now (consistency!)
 HTTPParameterBinding:
-	'element' (boundParameter=STRING) 'realized' 'as' parameterMapping=HTTPParameter 'parameter' ('with' details=ElementStructure)? 
-	// type vs. instance elementStructureInstance rule? default value (JSON?)
+	'element' (boundParameter=STRING) 'realized' 'as' parameterMapping=HTTPParameter 'parameter' ('with'
+	details=ElementStructure)?// type vs. instance elementStructureInstance rule? default value (JSON?)
 ;
 
-enum HTTPVerb: GET | PUT | POST | PATCH | DELETE | HEAD | OPTIONS | TRACE
-;
+enum HTTPVerb:
+	GET | PUT | POST | PATCH | DELETE | HEAD | OPTIONS | TRACE;
 
-enum HTTPParameter: QUERY | HEADER | PATH | COOKIE | BODY // semantic rule: BODY is default; OAS: "query", "header", "path" or "cookie" (plus "formData" in Swagger2)
+enum HTTPParameter:
+	QUERY | HEADER | PATH | COOKIE | BODY // semantic rule: BODY is default; OAS: "query", "header", "path" or "cookie" (plus "formData" in Swagger2)
 ;
 
 ReportBinding:
-	'report' name=ID 'realized' 'as' httpStatusCode=INT ('with' details=STRING)?
-;
+	'report' name=ID 'realized' 'as' httpStatusCode=INT ('with' details=STRING)?;
 
 SecurityBinding:
 	// [SecurityPolicy] reference?
-	'policy' name=ID 'realized' 'as' http=OASSecurity ('with' keys+=ID values+=STRING)*
-;
+	'policy' name=ID 'realized' 'as' http=OASSecurity ('with' keys+=ID values+=STRING)*;
 
-enum OASSecurity: BASIC_AUTHENTICATION | JWT | API_KEY | OAUTH_IMPLICIT | OAUTH_FLOW | String; // any default?
-
+enum OASSecurity:
+	BASIC_AUTHENTICATION | JWT | API_KEY | OAUTH_IMPLICIT | OAUTH_FLOW | String; // any default?
 
 JavaBinding:
 	// TODO (future work) class name(s) cannot be bound/configured at present (unlike package and operations)
-	java='Java' (binding='binding' ('package' package=STRING)? opsBinding+=JavaOperationBinding+)?
-;
+	java='Java' (binding='binding' ('package' package=STRING)? opsBinding+=JavaOperationBinding+)?;
 
 JavaOperationBinding:
 	'operation' boundOperation=ID 'to' method=STRING // no "subresource" here
-	pB+=JavaParameterBinding*
-;
+	pB+=JavaParameterBinding*;
 
 JavaParameterBinding:
-	'element' (boundParameter=ID|any='*') 'realized' 'as' pm=JavaParameter 'type' // HTTP has more here
+	'element' (boundParameter=ID | any='*') 'realized' 'as' pm=JavaParameter 'type' // HTTP has more here
 ;
 
-enum JavaParameter: byte | short | int | long | float | double | boolean | char | String; // String needed? or object/DTO required?
-
+enum JavaParameter:
+	byte | short | int | long | float | double | boolean | char | String; // String needed? or object/DTO required?
 
 GRPCBinding:
-	gRPC='gRPC' (binding='binding' opsBinding+=GRPCOperationBinding+)?
-;
+	gRPC='gRPC' (binding='binding' opsBinding+=GRPCOperationBinding+)?;
 
 GRPCOperationBinding:
-	'operation' boundOperation=ID ('to' method=STRING)? ('as' so=StreamingOption 'stream')?
-;
+	'operation' boundOperation=ID ('to' method=STRING)? ('as' so=StreamingOption 'stream')?;
 
 enum StreamingOption:
 	client | server | bidirectional // if not present, "unary" is assumed
 ;
 
-
 OtherBinding:
-    soap='SOAP_HTTP' | jsonrpc='JSON-RPC' | avro='Avro_RPC' | thrift='Thrift' | ws='Web_Sockets' | amqp='AMQP' | jms='JMS_ActiveMQ' | stomp='STOMP' | kafka='Kafka' | mqtt='MQTT' | other=STRING 
-;
-
+	soap='SOAP_HTTP' | jsonrpc='JSON-RPC' | avro='Avro_RPC' | thrift='Thrift' | ws='Web_Sockets' | amqp='AMQP' | jms=
+	'JMS_ActiveMQ' | stomp='STOMP' | kafka='Kafka' | mqtt='MQTT' | other=STRING;
 
 // **** SLA
-
 SLA:
-	'SLA' (builtin=InternalSLA | external=[SLATemplate])
-;
+	'SLA' (builtin=InternalSLA | external=[SLATemplate]);
 
 SLATemplate:
 	'SLA' 'template'
 	name=ID
-	slas+=InternalSLA
-;
+	slas+=InternalSLA;
 
 InternalSLA:
 	('type' type=SLAType)? // note: not checked/used at present (semantic check?) 
 	slos+=SLO+
 	('penalty' penalties=STRING)?
 	('notification' reporting=STRING)?
-	rp=RatePlan? 
-	rl+=RateLimit*
-;
+	rp=RatePlan?
+	rl+=RateLimit*;
 
 // TODO rename to 'Pricing Plan' (MAP)
 RatePlan:
@@ -753,145 +661,124 @@ RatePlan:
 ;
 
 RateLimit:
-	'rate' 'limit' (none='NONE' | "MAX_CALLS" callRate=SimpleMeasurement | "DATA_QUOTA" dataRate=SimpleMeasurement) "within" interval=SimpleMeasurement// note: just a PoC/demo, can be modeled much better (see pattern/books)	
+	'rate' 'limit' (none='NONE' | "MAX_CALLS" callRate=SimpleMeasurement | "DATA_QUOTA" dataRate=SimpleMeasurement)
+	"within" interval=SimpleMeasurement // note: just a PoC/demo, can be modeled much better (see pattern/books)	
 ;
 
-enum SLAType: 
-	NONE  | IMPLICIT | INFORMAL | QUALITATIVE | QUANTITATIVE
-;
+enum SLAType:
+	NONE | IMPLICIT | INFORMAL | QUALITATIVE | QUANTITATIVE;
 
 SLO:
-	'objective' 
-    name=ID
+	'objective'
+	name=ID
 	qualityGoal=STRING
 	// ':'  
-	measurement=Measurement
-;
+	measurement=Measurement;
 
 Measurement:
-	sm=SimpleMeasurement | lz=LandingZone
-;
+	sm=SimpleMeasurement | lz=LandingZone;
 
 SimpleMeasurement:
 	value=INT
-	unitOfMeasure=('hours' | 'minutes' | 'seconds' | 'MB' | 'GB'| ID | STRING)? // not a full specification of units/measures, just a PoC/demo
+	unitOfMeasure=('hours' | 'minutes' | 'seconds' | 'MB' | 'GB' | ID | STRING)? // not a full specification of units/measures, just a PoC/demo
 ;
 
 LandingZone:
 	'minimal' s=SimpleMeasurement
 	'target' t=SimpleMeasurement
-	('optimal' o=SimpleMeasurement)?
-;
+	('optimal' o=SimpleMeasurement)?;
 
 // **** evolution
-
-enum EvolutionStrategy: 
+enum EvolutionStrategy:
 	ETERNAL_LIFETIME | LIMITED_GUARANTEED_LIFETIME | TWO_IN_PRODUCTION | AGGRESSIVE_OBSOLESCENCE | EXPERIMENTAL_PREVIEW // MAPs
 	| OTHER_STRATEGY | UNDISCLOSED // default: UNDISCLOSED
 ;
 
-
 // *** C.2: Client 
-
 Client:
 	'API' 'client' name=ID
-	('version' svi=SemanticVersioningIdentifier)? 
-     cons+=Consumption+
-;
+	('version' svi=SemanticVersioningIdentifier)?
+	cons+=Consumption+;
 
-Consumption: 
+Consumption:
 	'consumes' contract=[EndpointContract]
 	// if present, the provider reference creates a fixed binding between client and server:
 	('from' providerReference=[Provider] | 'through' gatewayReference=[Gateway])? // could also go down to endpoint level
-	('via' 'protocol'  binding+=ClientBinding)? // must match provider-side information (linter!)
+	('via' 'protocol' binding+=ClientBinding)? // must match provider-side information (linter!)
 	// old syntax required resource binding to be specified since V5.0 (for HTTP protocol); this is fixed now (in slightly incompatible way)
 ;
 
 ClientBinding:
-    http='HTTP' | grpc='gRPC' | java='Java' | OtherBinding // add more precision, e.g. implementation info such as Feign?
+	http='HTTP' | grpc='gRPC' | java='Java' | OtherBinding // add more precision, e.g. implementation info such as Feign?
 ;
 
 // AsyncMDSL: 
-
 MessageEndpoint:
 	'message' 'endpoint' name=ID
 	('of' 'type' types+=MessageEndpointType (',' types+=MessageEndpointType)*)?
 	('serves' 'as' primaryRole=ResourceRole (',' otherRoles+=ResourceRole)* 'role'?)?
 	('description' description=STRING)?
-	'uses' 
-		('channels' ':'
-			channelsNoBroker+=AsyncConsumptionWithProtocolBinding (',' channelsNoBroker+=AsyncConsumptionWithProtocolBinding)*
-		)?
-	(channels+=AsyncConsumptionFromBroker (',' channels+=AsyncConsumptionFromBroker)*)?
-;
+	'uses'
+	('channels' ':'
+	channelsNoBroker+=AsyncConsumptionWithProtocolBinding (',' channelsNoBroker+=AsyncConsumptionWithProtocolBinding)*)?
+	(channels+=AsyncConsumptionFromBroker (',' channels+=AsyncConsumptionFromBroker)*)?;
 
 enum MessageEndpointType:
-	TRANSACTIONAL_CLIENT | POLLING_CONSUMER | EVENT_DRIVEN_CONSUMER | IDEMPOTENT_RECEIVER | MESSAGING_GATEWAY | MESSAGING_MAPPER | COMPETEING_CONSUMER | MESSAGE_DISPATCHER | SELECTIVE_CONSUMER | DURABLE_SUBSCRIBER | SERVICE_ACTIVATOR
-;
+	TRANSACTIONAL_CLIENT | POLLING_CONSUMER | EVENT_DRIVEN_CONSUMER | IDEMPOTENT_RECEIVER | MESSAGING_GATEWAY |
+	MESSAGING_MAPPER | COMPETEING_CONSUMER | MESSAGE_DISPATCHER | SELECTIVE_CONSUMER | DURABLE_SUBSCRIBER |
+	SERVICE_ACTIVATOR;
 
 AsyncConsumptionFromBroker:
 	'from' broker=[MessageBroker] ':'
 	channels+=AsyncConsumptionNoProtocolBinding (',' channels+=AsyncConsumptionNoProtocolBinding)*
-	(binding+=ProtocolBinding)?
-;
+	(binding+=ProtocolBinding)?;
 
 // this rule is actually used, [reference] in next two rules:
 Channel:
-	ChannelContract | RequestChannel | ReplyChannel
-	// TODO change to cc=ChannelContract | reqc=RequestChannel | repc=ReplyChannel (impact on Xtend?)
+	ChannelContract | RequestChannel | ReplyChannel// TODO change to cc=ChannelContract | reqc=RequestChannel | repc=ReplyChannel (impact on Xtend?)
 ;
 
 AsyncConsumptionNoProtocolBinding:
 	(channel=[Channel])
-	(where=WhereConstruct)?
-;
+	(where=WhereConstruct)?;
 
 AsyncConsumptionWithProtocolBinding:
 	(channel=[Channel])
 	(where=WhereConstruct)?
-	(binding+=ProtocolBinding)?
-;
+	(binding+=ProtocolBinding)?;
 
 WhereConstruct:
-	{WhereConstruct} 'where' 
+	{WhereConstruct} 'where'
 	(whereClauses+=ConsumptionWhereClauses (',' whereClauses+=ConsumptionWhereClauses)*)?
-		((',')? 'all' 'subscriptions' 'are' 'durable')?
-;
+	((',')? 'all' 'subscriptions' 'are' 'durable')?;
 
 ConsumptionWhereClauses:
-		'consumed' 'if' leftExp=STRING op=BinaryOperator rightExpr=IfExpr
-;
+	'consumed' 'if' leftExp=STRING op=BinaryOperator rightExpr=IfExpr;
 
 IfExpr:
-	STRING | INT
-;
+	STRING | INT;
+
 BinaryOperator:
-	'==' | '!=' | '>' | '<' | '<=' | '>='
-;
+	'==' | '!=' | '>' | '<' | '<=' | '>=';
 
 // *** C.3: Gateway (experimental)
-
 Gateway:
-	('API' 'gateway' ) name=ID // | 'Message' 'broker' removed, was experimental
-	('version' svi=SemanticVersioningIdentifier)? 
+	('API' 'gateway') name=ID // | 'Message' 'broker' removed, was experimental
+	('version' svi=SemanticVersioningIdentifier)?
 	gateList+=Gate+ // TODO (future work) implement validators (and adjust existing HTTP binding one)
-	('evolution' 'governance' evolStrat=EvolutionStrategy)?
-;
+	('evolution' 'governance' evolStrat=EvolutionStrategy)?;
 
 Gate:
-	( 'offers' )  upstreamContract+=[EndpointContract]+ // | 'publishes' removed, was experimental
-	endpoints+=EndpointInstance+ 
-    cons+=Consumption
-    ('mediates' dts+=DataTransformation)*
-;
+	('offers') upstreamContract+=[EndpointContract]+ // | 'publishes' removed, was experimental
+	endpoints+=EndpointInstance+
+	cons+=Consumption
+	('mediates' dts+=DataTransformation)*;
 
 DataTransformation:
 	'from' indc=[DataContract] 'to' outdc=[DataContract] // TODO add implementation hook/exit/callback info?
 ;
 
-
 // *** C.4: Provider Implementation (experimental)
-
 ProviderImplementation:
 	'API' 'provider' 'implementation'
 	name=ID
@@ -903,30 +790,25 @@ ProviderImplementation:
 
 // TODO add Data Transformation here (an API implementation may have data model that differs from that of API)
 // it can be seen as a gateway from HTTP to local Java so might not need this grammar part at all
-
-enum ImplementationTechnology: PlainJava /* | SpringMVC | vlingo */ | STRING
-;	
-
+enum ImplementationTechnology:
+	PlainJava /* | SpringMVC | vlingo */ | STRING;
 
 // *** D: Service Orchestration (Events, Commands) and Integration Stories
-
 IntegrationScenario:
 	'scenario' name=ID ('type' type=ScenarioType)?
-	('version' svi=SemanticVersioningIdentifier)?  
+	('version' svi=SemanticVersioningIdentifier)?
 	stories+=IntegrationStory* // TODO could add related+=RelatedScenarios*
- ;
-
-enum ScenarioType:
-	BUSINESS_API | FRONTEND_INTEGRATION_SCENARIO | BACKEND_INTEGRATION_SCENARIO
 ;
 
+enum ScenarioType:
+	BUSINESS_API | FRONTEND_INTEGRATION_SCENARIO | BACKEND_INTEGRATION_SCENARIO;
+
 IntegrationStory:
-	('story' name=ID 
-	('version' svi=SemanticVersioningIdentifier)?  
-	('type' type=StoryType)? related+=RelatedStories*
-	)? // for compatibility
-	('when' condition=STRING)? 
-	('a'|'an'|'the') (client=STRING | 'API' 'client') // location, description? 
+	('story' name=ID
+	('version' svi=SemanticVersioningIdentifier)?
+	('type' type=StoryType)? related+=RelatedStories*)? // for compatibility
+	('when' condition=STRING)?
+	('a' | 'an' | 'the') (client=STRING | 'API' 'client') // location, description? 
 	// action can become command detail (data?)
 	'wants' 'to' action=Action on+=StoryObject* // CML has different approach (collections)
 	('yielding' outcome=STRING)? // postcondition 
@@ -934,47 +816,42 @@ IntegrationStory:
 ;
 
 Action:
-	plainAction=STRING | keyword=ActionKeyword ('a'|'an'|'the')? target=STRING // could try '*' here (CRUD in single story)
+	plainAction=STRING | keyword=ActionKeyword ('a' | 'an' | 'the')? target=STRING // could try '*' here (CRUD in single story)
 ;
 
 enum ActionKeyword:
-	CRUD | CRUDSF | CQRS 
-	// note: keywords such as 'create' would break operation naming - if present, operations can't be called create etc.
+	CRUD | CRUDSF | CQRS// note: keywords such as 'create' would break operation naming - if present, operations can't be called create etc.
 ;
 
 // V5.5.5: add 'the', 'about' and even more prepositions 
 StoryObject:
-	('with'|'against'|'for'|'at'|'in'|'to'|'on'|'from'|'and'|'into'|'within'|'via')? ('a'|'an'|'the'|'its')? object=STRING
-;
+	('with' | 'against' | 'for' | 'at' | 'in' | 'to' | 'on' | 'from' | 'and' | 'into' | 'within' | 'via')? ('a' | 'an' |
+	'the' | 'its')? object=STRING;
 
 enum StoryType:
 	USER_STORY | JOB_STORY | TEST_CASE | API_MOCK // analysis vs. design? 
 ;
 
 RelatedStories:
-	'follows' related+=[IntegrationStory] | 'alternative' 'to' related+=[IntegrationStory] | 'parallel' 'to' related+=[IntegrationStory]
-;
+	'follows' related+=[IntegrationStory] | 'alternative' 'to' related+=[IntegrationStory] | 'parallel' 'to'
+	related+=[IntegrationStory];
 
 // flow syntax adapted from CML grammar at https://github.com/ContextMapper/context-mapper-dsl/blob/master/org.contextmapper.dsl/src/org/contextmapper/dsl/ContextMappingDSL.xtext
-
 Orchestration:
-	'flow' name=ID 
-	('version' svi=SemanticVersioningIdentifier)?  
-	('realizes' scenario=[IntegrationScenario])? ('type' type=FlowType)? 
-	steps+=FlowStep* 
-	flowBinding=OrchestrationBinding?
-;
+	'flow' name=ID
+	('version' svi=SemanticVersioningIdentifier)?
+	('realizes' scenario=[IntegrationScenario])? ('type' type=FlowType)?
+	steps+=FlowStep*
+	flowBinding=OrchestrationBinding?;
 
-enum FlowType: 
-	APPLICATION_FLOW  | INTEGRATION_FLOW /* EIP */ | SERVICE_ORCHESTRATION | API_CALL_SEQUENCING /* conversation in MAP */ | EVENT_SOURCING
-;
+enum FlowType:
+	APPLICATION_FLOW | INTEGRATION_FLOW /* EIP */ | SERVICE_ORCHESTRATION |
+	API_CALL_SEQUENCING /* conversation in MAP */ | EVENT_SOURCING;
 
 // experimental flow binding (not from CML):
- 
 OrchestrationBinding:
-	'binding' /* 'flow' */ 'to' (eptb+=EndpointTypeBinding|cb+=ChannelBinding)+
-	('implemented' 'as' ft=FlowTechnology)? 
-	// TODO (future work) add detailed information required for code generation, e.g., Aggregator timeouts in Camel
+	'binding' /* 'flow' */ 'to' (eptb+=EndpointTypeBinding | cb+=ChannelBinding)+
+	('implemented' 'as' ft=FlowTechnology)?// TODO (future work) add detailed information required for code generation, e.g., Aggregator timeouts in Camel
 ;
 
 EndpointTypeBinding:
@@ -982,12 +859,13 @@ EndpointTypeBinding:
 ;
 
 ChannelBinding:
-	'channel' 'type' channels+=[ChannelContract] stepBindings+=StepToChannelBinding* ('provider' provider=[MessageBroker])? // TODO test; add MessageEndpoint too?
+	'channel' 'type' channels+=[ChannelContract] stepBindings+=StepToChannelBinding* ('provider'
+	provider=[MessageBroker])? // TODO test; add MessageEndpoint too?
 ;
 
 FlowTechnology:
-	'APACHE_CAMEL_ROUTE' | 'SPRING_INTEGRATION_FLOW' | 'BPMN_PROCESS' | 'BPEL_PROCESS' | 'YET_ANOTHER_FLOW_LANGUAGE' | 'PLAIN_PROGRAMMING' | STRING
-;
+	'APACHE_CAMEL_ROUTE' | 'SPRING_INTEGRATION_FLOW' | 'BPMN_PROCESS' | 'BPEL_PROCESS' | 'YET_ANOTHER_FLOW_LANGUAGE' |
+	'PLAIN_PROGRAMMING' | STRING;
 
 StepToEndpointBinding:
 	eob=EventToOperationBinding | cob=CommandToOperationBinding // e.g. Feign or JAX-RS as impl. tech.?
@@ -1016,85 +894,70 @@ CommandToMessageBinding:
 	'command' command=[CommandType] 'to' 'message' oneWayChannelMsg=ID // AsyncMDSL: [Message] not possible
 	// TODO mediation? could be separate channel/filter/channel config. with ContentFilter, etc. (EIPs)
 ;
-	
-// ServiceOperation: (typeref=ID '.')? opref=ID; // can't reference [operations], regrettably
 
+// ServiceOperation: (typeref=ID '.')? opref=ID; // can't reference [operations], regrettably
 FlowStep:
-	depStep=DomainEventProductionStep | cisStep=CommandInvokationStep | eceStep=CombinedInvocationStep
-;
+	depStep=DomainEventProductionStep | cisStep=CommandInvokationStep | eceStep=CombinedInvocationStep;
 
 // TODO add <<EIP>> decorators, for instance for Aggregation strategy and wait behavior
-
 CombinedInvocationStep:
-	cisStep=CommandInvokationStep ('emits'|'emit') ('event'|'events') eventProduction=EventProduction
-;
+	cisStep=CommandInvokationStep ('emits' | 'emit') ('event' | 'events') eventProduction=EventProduction;
 
 DomainEventProductionStep:
 	// this corresponds to app flow state transitions in CML, see https://contextmapper.org/docs/application-and-process-layer/
 	// simplified not to break SOAD refinement flow, renamed aggregate=[EndpointContract] to contractAndOperation=[EndpointContract]
-	action=EitherCommandOrOperation /* ('delegates' 'to' contractAndOperation=[EndpointContract] ('[' stateTransition=StateTransition ']')?)?  */ ('emits'|'emit') ('event'|'events') eventProduction=EventProduction
-;
+	action=EitherCommandOrOperation /* ('delegates' 'to' contractAndOperation=[EndpointContract] ('[' stateTransition=StateTransition ']')?)?  */ (
+	'emits' | 'emit') ('event' | 'events') eventProduction=EventProduction;
 
 CommandInvokationStep:
 	// no support for 'or' and 'xor' here, can be modelled with two steps triggering/invoking different commands (same event(s) on the left)
-	('event'|'events') events+=[EventType] (('+' | 'and' ) events+=[EventType])* ('triggers'|'trigger') action=EitherCommandOrOperationInvokation
-;
- 
+	('event' | 'events') events+=[EventType] (('+' | 'and') events+=[EventType])* ('triggers' | 'trigger')
+	action=EitherCommandOrOperationInvokation;
+
 // no AND, OR, no XOR here (not needed, can be modelled with two separate steps with same command(s) on left side)
 EitherCommandOrOperation:
-	('command' command=[CommandType] /* | 'operation' operation=ServiceOperation */) ('[' 'initiated' 'by' actor=STRING ']')?
-;
+	('command' command=[CommandType] /* | 'operation' operation=ServiceOperation */ ) ('[' 'initiated' 'by' actor=STRING
+	']')?;
 
 EitherCommandOrOperationInvokation:
-	(('command'|'commands') ci=CommandInvokation) | ('flow'  spi=SubProcessInvocation) /* | oi=OperationInvokation */ // taken out (from CML)
+	(('command' | 'commands') ci=CommandInvokation) | ('flow' spi=SubProcessInvocation) /* | oi=OperationInvokation */ // taken out (from CML)
 ;
 
 SubProcessInvocation:
 	// 'flow' subprocess=[Orchestration] 
-	subprocess=[Orchestration] 
-;
+	subprocess=[Orchestration];
 
 CommandInvokation:
 	// ('command'|'commands') (sci=SingleCommandInvokation | cci=ConcurrentCommandInvokation | eaci=ExclusiveAlternativeCommandInvokation | iaci=InclusiveAlternativeCommandInvokation)
-	(sci=SingleCommandInvokation | cci=ConcurrentCommandInvokation | eaci=ExclusiveAlternativeCommandInvokation | iaci=InclusiveAlternativeCommandInvokation)
-;
+	(sci=SingleCommandInvokation | cci=ConcurrentCommandInvokation | eaci=ExclusiveAlternativeCommandInvokation |
+	iaci=InclusiveAlternativeCommandInvokation);
 
 SingleCommandInvokation:
-	commands+=[CommandType]
-;
+	commands+=[CommandType];
 
 ConcurrentCommandInvokation:
-	commands+=[CommandType] (('+' | 'and') commands+=[CommandType])+
-;
+	commands+=[CommandType] (('+' | 'and') commands+=[CommandType])+;
 
 ExclusiveAlternativeCommandInvokation:
-	commands+=[CommandType] (('x' | 'X' | 'xor' | 'alternatively') commands+=[CommandType])+
-;
+	commands+=[CommandType] (('x' | 'X' | 'xor' | 'alternatively') commands+=[CommandType])+;
 
 InclusiveAlternativeCommandInvokation:
-	commands+=[CommandType] (('o' | 'O' | 'or') commands+=[CommandType])+
-;
+	commands+=[CommandType] (('o' | 'O' | 'or') commands+=[CommandType])+;
 
 // operation related rules from CML removed
-
 EventProduction:
-	sep=SingleEventProduction | mep=MultipleEventProduction | eaep=ExclusiveAlternativeEventProduction | iaep=InclusiveAlternativeEventProduction
-;
+	sep=SingleEventProduction | mep=MultipleEventProduction | eaep=ExclusiveAlternativeEventProduction |
+	iaep=InclusiveAlternativeEventProduction;
 
 SingleEventProduction:
-	events+=[EventType]
-;
+	events+=[EventType];
 
 MultipleEventProduction:
-	events+=[EventType] (('+' | 'and' ) events+=[EventType])+
-;
+	events+=[EventType] (('+' | 'and') events+=[EventType])+;
 
 ExclusiveAlternativeEventProduction:
-	events+=[EventType] (('x' | 'X' | 'xor' | 'alternatively') events+=[EventType])+
-;
+	events+=[EventType] (('x' | 'X' | 'xor' | 'alternatively') events+=[EventType])+;
 
 InclusiveAlternativeEventProduction:
-	events+=[EventType] (('o' | 'O' | 'or') events+=[EventType])+
-;
-
+	events+=[EventType] (('o' | 'O' | 'or') events+=[EventType])+;
 // ** End of MDSL grammar 
