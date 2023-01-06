@@ -1,5 +1,7 @@
 package io.mdsl.generator;
 
+import java.io.CharArrayWriter;
+import java.util.Map;
 import java.util.Set;
 
 import org.eclipse.emf.common.util.URI;
@@ -9,6 +11,7 @@ import com.google.common.collect.Sets;
 
 import io.mdsl.apiDescription.ServiceSpecification;
 import io.mdsl.generator.openapi.converter.MDSL2OpenAPIConverter;
+import io.mdsl.generator.openapi.converter.OpenSLOConverter;
 import io.swagger.v3.core.util.Yaml;
 import io.swagger.v3.oas.models.OpenAPI;
 import io.swagger.v3.parser.OpenAPIV3Parser;
@@ -33,6 +36,16 @@ public class OpenAPIGenerator extends AbstractMDSLGenerator {
 		// convert MDSL to OpenAPI model:
 		OpenAPI oas = new MDSL2OpenAPIConverter(mdslSpecification).convert();
 
+		// Check if specification has any OpenSLO Templates defined
+		if (!mdslSpecification.getOslos().isEmpty()) {
+			OpenSLOConverter osloConverter = new OpenSLOConverter(mdslSpecification, inputFileURI);
+			Map<String, String> convertedOSLOs = osloConverter.convert();
+			for(String osloFileName : convertedOSLOs.keySet()) {
+				fsa.generateFile(osloFileName, convertedOSLOs.get(osloFileName));
+			}
+		}
+		
+		
 		// serialize model as YAML file:
 		String yaml = Yaml.pretty(oas);
 

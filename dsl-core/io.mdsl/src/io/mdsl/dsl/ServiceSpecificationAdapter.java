@@ -30,6 +30,7 @@ import org.eclipse.emf.ecore.EReference;
 import org.eclipse.emf.ecore.EStructuralFeature;
 import org.eclipse.emf.ecore.resource.Resource;
 
+import io.mdsl.apiDescription.AlertNotificationTarget;
 import io.mdsl.apiDescription.AlertPolicy;
 import io.mdsl.apiDescription.ChannelContract;
 import io.mdsl.apiDescription.Client;
@@ -328,5 +329,10 @@ public class ServiceSpecificationAdapter implements ServiceSpecification, Servic
 	@Override
 	public EList<SLI> getSlis() {
 		return internalSpec.getSlis();
+	}
+
+	@Override
+	public EList<AlertNotificationTarget> getAlertNotificationTarget() {
+		return internalSpec.getAlertNotificationTarget();
 	}
 }

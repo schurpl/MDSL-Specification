@@ -39,6 +39,7 @@ ServiceSpecification hidden(WS, ML_COMMENT, SL_COMMENT):
 	contracts+=(EndpointContract | ChannelContract)* // ChannelContract is AsyncMDSL extension
 	dataSources+=DataSource*
 	services+=Service*
+	alertNotificationTarget += AlertNotificationTarget*
 	alertPol+=AlertPolicy*
 	slis+=SLI*
 	(slas+=SLATemplate* | oslos+=OSLOTemplate*)
@@ -71,14 +72,14 @@ terminal OPERATOR:
 
 OSLOTemplate:
 	'OpenSLOTemplate'
-	name=ID ('displayed' 'as' displayName=STRING)?
+	name=sName ('displayed' 'as' displayName=STRING)?
 	('description' description=STRING)?
 	'part' 'of' service=[Service]
 	'indicator' (builtInIndicator=SLI | externalIndicator=[SLI])
 	'in' 'time-window' timeWindow=TimeWindow
 	'budgeted' budgetingMethod=BudgetingMethod
 	'with' 'objectives' objectives+=Objective
-	'with' 'Alert' 'Policies' (builtInalertPol=AlertPolicy | externalAlertPol=[AlertPolicy]);
+	'with' 'Alert' 'Policies' (builtInalertPol+=AlertPolicy | externalAlertPol+=[AlertPolicy]);
 
 Duration:
 	value=INT
@@ -86,7 +87,10 @@ Duration:
 
 Boolean returns ecore::EBoolean:
 	('true' | 'false');
-	
+
+sName :
+	ID (ID | '-' |'.' |'|'|'/'|'\\')*
+;
 TimeWindow:
 	duration=Duration
 	(calendarBased=CalendarBased | 'is' 'rolling' rolling=Boolean);
@@ -97,76 +101,83 @@ CalendarBased:
 
 AlertPolicy:
 	'Alert' 'Policy'
-	name=ID ('displayed' 'as' displayName=STRING)?
+	name=sName ('displayed' 'as' displayName=STRING)?
 	('description' description=STRING)?
 	'alert' 'when' 'no' 'data' nodata=Boolean
 	'alert' 'when' 'resolved' resolved=Boolean
 	'alert' 'when' 'breaching' breaching=Boolean
 	'conditions' conditions+=AlertCondition
-	'notifies' notificationTarget=AlertNotificationTarget;
+	'notifies' notificationTarget+=[AlertNotificationTarget];
 
 AlertNotificationTarget:
 	'Alert' 'Notification' 'Target'
-	name=ID ('displayed' 'as' displayName=STRING)?
+	name=sName ('displayed' 'as' displayName=STRING)?
 	'target' target=STRING
-	('description' description=STRING)? // 150 Char Limit schauen ob umsetzbar in Grammar
+	('description' description=STRING)? 
 ;
 
 AlertCondition:
 	'Alert' 'Condition'
-	name=ID ('displayed' 'as' displayName=STRING)?
+	name=sName ('displayed' 'as' displayName=STRING)?
 	('description' description=STRING)?
 	'severity' severity=STRING
-	'condition' condition=Condition // Check if other Conditions than burnrate are applicapble
+	'condition' condition=Condition 
 ;
 
 Condition:
-	'Condition'
-	name=ID
+	'kind' kind = STRING
 	'operator' operator=OPERATOR
 	'with' 'threshold' threshold=INT
 	'look' 'back' lookBack=Duration
 	'alert' 'after' alertAfter=Duration;
 
 Objective:
-	name=ID
+	('displayed' 'as' displayName=STRING)?
 	('with' 'operator' operator=OPERATOR compValue=Double)?
 	 // Nur verwenden wenn in der zugehörigen SLI eine Threshold metric verwendet wird (Syntax Check o.ä.)
-	('with' 'target' target=Double | 'with' 'target' 'percent' targetPer=Double)
+	('with'  target=Target | 'with'  targetPer=TargetPercent)
 	// Time Slices nur benötigt wenn in der SLI als Budgeting Method Time Slices ausgewählt sind
 	('with' 'SiliceTarget' sliceTarget=Double)?
 	('with' 'SiliceWindow' (numeric=INT | durationBased=Duration))?;
 
+Target:
+	'target' target=Double
+;
+
+TargetPercent:
+	'target' 'percent' targetPer =Double
+;
 Service:
 	'Service'
-	name=ID ('displayed' 'as' displayName=STRING)?
+	name=sName ('displayed' 'as' displayName=STRING)?
 	('purpose:' purpose=STRING)?;
 
 SLI:
 	'SLI'
-	name=ID ('displayed' 'as' displayName=STRING)?
+	name=sName ('displayed' 'as' displayName=STRING)?
 	('description' description=STRING)?
-	'with' (tMetric=Thresholdmetric | rMetric=RatioMetric);
+	'with' (tMetric=ThresholdMetric | rMetric=RatioMetric);
 
-Thresholdmetric:
+ThresholdMetric:
 	'Threshold' 'Metric' 'from' metricSource=MetricSource
-	'spec' spec=STRING;
+	;
 
 RatioMetric:
 	'Ratio' 'Metric'
 	'counter' counter=Boolean
 	('total' total=MetricSource
-	('good' good=MetricSource | 'bad' bad=MetricSource) | 'raw' raw=MetricSource)
+	('good' good=MetricSource | 'bad' bad=MetricSource)) | 'raw' raw=MetricSource
 	('with' 'raw' 'type' rType=('success' | 'failure'))?;
 
 MetricSource:
-	('dataSource' dataSource=[DataSource])?
+	'Metric' 'Source'
+	('with' 'Data' 'Source' dataSource=[DataSource])?
 	('type' type=STRING)? // //Predefinded type Prometeus etc. 
 	'with' 'spec' spec=STRING // how to obtain data specs means querry url in case of Prometheus
 ;
 
 DataSource:
-	'Data' 'Source' name=ID ('displayed' 'as' displayName=STRING)?
+	'Data' 'Source' name=sName ('displayed' 'as' displayName=STRING)?
 	('description' description=STRING)?
 	'type' type=STRING // Predefined type Prometeus etc. 
 	'connection' 'details' 'URL' url=STRING;
@@ -523,7 +534,7 @@ EndpointList:
 EndpointInstance:
 	'at' 'endpoint' 'location' location=STRING
 	pb+=TechnologyBinding+ // changed from * to + 
-	('with' 'endpoint' sla=SLA)? // SLA is optional
+	('with' 'endpoint' (oslo = [OSLOTemplate] | sla=SLA))? // SLA is optional
 	('endpoint' 'governance' evolStrat=EvolutionStrategy)?;
 
 // AsyncMDSL: 

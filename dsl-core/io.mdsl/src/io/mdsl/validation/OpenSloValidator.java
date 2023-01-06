@@ -202,7 +202,7 @@ public class OpenSloValidator extends AbstractMDSLValidator {
 
 	@Check
 	public void ObjectiveTargetValueSetInRange(Objective objective) {
-		if (!isInRange(objective.getTarget(), 0.0, 1.0, true, false)) {
+		if (!isInRange(objective.getTarget().getTarget(), 0.0, 1.0, true, false)) {
 			error("Target value not in range [0.0,1.0)" + objective.getTarget(), objective,
 					ApiDescriptionPackage.eINSTANCE.getObjective_Target(), NOT_SET_CORRECTLY);
 		}
@@ -210,7 +210,7 @@ public class OpenSloValidator extends AbstractMDSLValidator {
 
 	@Check
 	public void ObjectiveTargetPercentValueSetInRange(Objective objective) {
-		if (!isInRange(objective.getTargetPer(), 0.0, 100, true, false)) {
+		if (!isInRange(objective.getTargetPer().getTargetPer(), 0.0, 100, true, false)) {
 			error("Target value not in range [0.0,100)" + objective.getTargetPer(), objective,
 					ApiDescriptionPackage.eINSTANCE.getObjective_TargetPer(), NOT_SET_CORRECTLY);
 		}
