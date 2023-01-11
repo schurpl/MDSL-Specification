@@ -29,7 +29,7 @@ import io.mdsl.apiDescription.TimeWindow;
 import io.swagger.v3.core.util.Yaml;
 
 /**
- * Class converts the OpenSLO template in a YAML Format
+ * Class converts the OpenSLO template in a YAML formatted Sting
  * 
  * @author Pascal Schur
  *
@@ -45,13 +45,17 @@ public class OpenSLOConverter {
 	}
 
 	/**
-	 * Operation converts the Open SLO Template Object into a String representation
-	 * in YAML Format
+	 * Operation converts all OSLO Templates in the provided Service Specification
+	 * into YAML Formatted Strings in YAML Format and returns them in a Map. The Map
+	 * has Filenames as keys and the coresponding contents as values. This allows to
+	 * get the map iterate over it and write all Open SLO Templates in the according
+	 * files.
 	 *
-	 * @return String which represents the osloTemplate in YAML Format
+	 * @return Map<String, String> Map represents a mapping between filename
+	 *         contents for the Open SLO YAML Files
 	 */
-	public Map<String,String> convert() {
-		Map<String,String> docummentMap = new LinkedHashMap<String,String>();
+	public Map<String, String> convert() {
+		Map<String, String> docummentMap = new LinkedHashMap<String, String>();
 		if (this.mdslSpecification.getOslos().isEmpty()) {
 			throw new NullPointerException("No Open SLO template defined");
 		}
@@ -100,22 +104,40 @@ public class OpenSLOConverter {
 
 			// DataSources
 			Set<DataSource> dataSources = getDataSources(osloTemplate);
-			for(DataSource dataSource : dataSources) {
-				String dataSourceString = toYAML(createDataSourceMap(dataSource),false);
+			for (DataSource dataSource : dataSources) {
+				String dataSourceString = toYAML(createDataSourceMap(dataSource), false);
 				osloString = osloString.concat(dataSourceString);
 			}
-			docummentMap.put(createFIleName(osloTemplate),osloString);
+			docummentMap.put(createFIleName(osloTemplate), osloString);
 		}
 
 		return docummentMap;
 
 	}
 
+	/**
+	 * Operation takes the OpenSLO Template and generates a filename based on the
+	 * Input MDSL file.
+	 * 
+	 * Example: Input esample.mdsl Result : example-openslo-$oslotemplateName.yaml
+	 * 
+	 * @param osloTemplate
+	 * @return Filename
+	 */
 	private String createFIleName(OSLOTemplate osloTemplate) {
-		String osloFilmeName = new String (inputFileURI.trimFileExtension().lastSegment() + "-openslo-"+osloTemplate.getName()+".yaml");
+		String osloFilmeName = new String(
+				inputFileURI.trimFileExtension().lastSegment() + "-openslo-" + osloTemplate.getName() + ".yaml");
 		return osloFilmeName;
 	}
 
+	/**
+	 * 
+	 * Helper Operation returns all Used DataSources in one OSLOTemplate object
+	 * 
+	 * @param osloTemplate
+	 * @return Set<DataSources> set contains all DataSources used in the given
+	 *         OSLOTemplate
+	 */
 	private Set<DataSource> getDataSources(OSLOTemplate osloTemplate) {
 		Set<DataSource> dataSources = new HashSet<DataSource>();
 		SLI indicator;
@@ -135,6 +157,13 @@ public class OpenSLOConverter {
 		return dataSources;
 	}
 
+	/**
+	 * Helper Operation returns all DataSources from a RaioMetric Object
+	 * 
+	 * @param ratioMetric
+	 * @return List<DataSource> List of all DataSources used in the given
+	 *         RataioMetric Object
+	 */
 	private List<DataSource> getDataSourcesFromRatioMetric(RatioMetric ratioMetric) {
 		List<DataSource> dataSources = new ArrayList<DataSource>();
 		if (ratioMetric.getBad() != null) {
@@ -162,6 +191,13 @@ public class OpenSLOConverter {
 
 	}
 
+	/**
+	 * Operation takes a Service Object and converts it to Map according to Open SLO
+	 * specification
+	 * 
+	 * @param service
+	 * @return Map<String, Object> representation of given Service Object
+	 */
 	private Map<String, Object> createServiceMap(Service service) {
 		Map<String, Object> serviceMap = new LinkedHashMap<String, Object>();
 		serviceMap.put("apiVersion", "openslo/v1");
@@ -177,6 +213,14 @@ public class OpenSLOConverter {
 		return serviceMap;
 	}
 
+	/**
+	 * Operation takes a AlertNotificationTarget Object and returns a Map according
+	 * to Open SLO Specification
+	 * 
+	 * @param alertNotificationTarget
+	 * @return Map<String, Object> representation of given AlertNotificationTarget
+	 *         Object
+	 */
 	private Map<String, Object> createNotificationTargetMap(AlertNotificationTarget alertNotificationTarget) {
 		Map<String, Object> alertNotificationTargetMap = new LinkedHashMap<String, Object>();
 		alertNotificationTargetMap.put("apiVersion", "openslo/v1");
@@ -187,6 +231,14 @@ public class OpenSLOConverter {
 		return alertNotificationTargetMap;
 	}
 
+	/**
+	 * Operation takes a alertNotificationTarget Object and returns a Map
+	 * representing the spec Attribute of the AlertNotificationTarget according to
+	 * OpenSLO specification
+	 * 
+	 * @param alertNotificationTarget
+	 * @return Map<String, Object> of the spec Attribute of AltertNotificationTarget
+	 */
 	private Map<String, Object> createNotificationTargetSpecmMap(AlertNotificationTarget alertNotificationTarget) {
 		Map<String, Object> alertNotificationTargetSpecMap = new LinkedHashMap<String, Object>();
 		alertNotificationTargetSpecMap.put("target", alertNotificationTarget.getTarget());
@@ -196,6 +248,13 @@ public class OpenSLOConverter {
 		return alertNotificationTargetSpecMap;
 	}
 
+	/**
+	 * Operation takes a AlertPolicy Object and returns a Map according to Open SLO
+	 * Specification
+	 * 
+	 * @param alertPolicy
+	 * @return Map<String, Object> representation of given AlertPolicy Object
+	 */
 	private Map<String, Object> createAlertPolyMap(AlertPolicy alertPolicy) {
 		Map<String, Object> alertPolMap = new LinkedHashMap<String, Object>();
 		alertPolMap.put("apiVersion", "openslo/v1");
@@ -206,6 +265,13 @@ public class OpenSLOConverter {
 		return alertPolMap;
 	}
 
+	/**
+	 * Operation takes a Alert Policy Object and returns a Map representing the spec
+	 * Attribute of the Alert Policy according to OpenSLO specification
+	 * 
+	 * @param alertNotificationTarget
+	 * @return Map<String, Object> of the spec Attribute of AlertPolicy
+	 */
 	private Map<String, Object> createAlertPolicySpecMap(AlertPolicy alertPolicy) {
 		Map<String, Object> alertPolSpecMap = new LinkedHashMap<String, Object>();
 		if (alertPolicy.getDescription() != null) {
@@ -220,6 +286,16 @@ public class OpenSLOConverter {
 		return alertPolSpecMap;
 	}
 
+	/**
+	 * 
+	 * Operations creates a List of Alert Notifications Targets used in the provided
+	 * Service Specification Each entry in the List is a Key Value Map
+	 * representation of one AlertNotificationTarget used in the Service
+	 * Specification
+	 * 
+	 * @param notificationTargets
+	 * @return List<Map<String, Object>> of AlertNotificationTarget Objects
+	 */
 	private List<Map<String, Object>> createAlertNotificationTargetsList(
 			EList<AlertNotificationTarget> notificationTargets) {
 		List<Map<String, Object>> alertNotificationTargetList = new ArrayList<Map<String, Object>>();
@@ -231,6 +307,14 @@ public class OpenSLOConverter {
 		return alertNotificationTargetList;
 	}
 
+	/**
+	 * 
+	 * Operations creates a List of Conditions Each entry in the List is a Key Value
+	 * Map represents one Condition
+	 * 
+	 * @param notificationTargets
+	 * @return List<Map<String, Object>> of AlertNotificationTarget Objects
+	 */
 	private List<Map<String, Object>> createConditionList(EList<AlertCondition> conditions) {
 		List<Map<String, Object>> alertConditionList = new ArrayList<Map<String, Object>>();
 		for (AlertCondition alertCondition : conditions) {
@@ -239,6 +323,14 @@ public class OpenSLOConverter {
 		return alertConditionList;
 	}
 
+	/**
+	 * Operations converts a Alert Condition Object into a Map representation of
+	 * itself according to Open SLO specification.
+	 * 
+	 * @param alertCondition
+	 * @return Map<String, Object> representation of the given Alert Condition
+	 *         Object
+	 */
 	private Map<String, Object> createAlterConditionMap(AlertCondition alertCondition) {
 		Map<String, Object> alertConditionMap = new LinkedHashMap<String, Object>();
 		alertConditionMap.put("kind", "AlertCondition");
@@ -248,6 +340,13 @@ public class OpenSLOConverter {
 		return alertConditionMap;
 	}
 
+	/**
+	 * Operation takes a Alert Condition Object. Returns a Map representing the spec
+	 * Attribute of the Alert Condition according to OpenSLO specification
+	 * 
+	 * @param alertCondition
+	 * @return Map<String, Object> of the spec Attribute of AlertCondition
+	 */
 	private Map<String, Object> createAlertConditionSpecMap(AlertCondition alertCondition) {
 		Map<String, Object> alertConditionSpecMap = new LinkedHashMap<String, Object>();
 		if (alertCondition.getDescription() != null) {
@@ -258,6 +357,13 @@ public class OpenSLOConverter {
 		return alertConditionSpecMap;
 	}
 
+	/**
+	 * Operations converts a Condition Object into a Map representation of itself
+	 * according to Open SLO specification.
+	 * 
+	 * @param condition
+	 * @return Map<String, Object> representation of the given Condition Object
+	 */
 	private Map<String, Object> createConditionMap(Condition condition) {
 		Map<String, Object> conditionMap = new LinkedHashMap<String, Object>();
 		conditionMap.put("kind", condition.getKind());
@@ -268,6 +374,13 @@ public class OpenSLOConverter {
 		return conditionMap;
 	}
 
+	/**
+	 * Takes a duration Object and returns the Shorthand as a String Example:
+	 * duration.value 24 duration.UnitOfMeasure h returns 24h
+	 * 
+	 * @param duration
+	 * @return duration shorthand as String
+	 */
 	private String createDurationShorthand(Duration duration) {
 		return new String(duration.getValue() + duration.getUnitOfMeasure());
 	}
@@ -281,14 +394,8 @@ public class OpenSLOConverter {
 	 */
 	private String toYAML(Map<String, Object> objectMap, Boolean isFirst) {
 		String yamlString = new String();
-		String lineSperator =  System.lineSeparator();
-		if (isFirst) {
-			yamlString = yamlString.concat("---"+lineSperator);
-		} else {
-			yamlString = yamlString.concat("---"+lineSperator);
-		}
+		yamlString = yamlString.concat("---" + System.lineSeparator());
 		yamlString = yamlString.concat(Yaml.pretty(objectMap));
-
 
 		return yamlString;
 	}
@@ -309,6 +416,12 @@ public class OpenSLOConverter {
 		return metadataMap;
 	}
 
+	/**
+	 * Operations returns a Map representation of the OpenSLO Template Object
+	 * 
+	 * @param osloTemplate
+	 * @return Map<String, Object> representation of the given OpenSLO Template
+	 */
 	private Map<String, Object> convertOSLOTemplate(OSLOTemplate osloTemplate) {
 		Map<String, Object> osloMap = new LinkedHashMap<>();
 		osloMap.put("apiVersion", "openslo/v1");
@@ -319,6 +432,13 @@ public class OpenSLOConverter {
 		return osloMap;
 	}
 
+	/**
+	 * Operation takes a OSLOTemplate Object. Returns a Map representing the spec
+	 * Attribute of the OSLOTemplate according to OpenSLO specification
+	 * 
+	 * @param osloTemplate
+	 * @return Map<String, Object> of the spec Attribute of OSLOTemplate
+	 */
 	private Map<String, Object> createOsloSpecMap(OSLOTemplate osloTemplate) {
 		Map<String, Object> specMap = new LinkedHashMap<>();
 		if (osloTemplate.getDescription() != null) {
@@ -337,7 +457,6 @@ public class OpenSLOConverter {
 
 		specMap.put("objectives", createObjectivesList(osloTemplate));
 
-		// alert policies
 		List<String> alertPolicyList = new ArrayList<String>();
 		if (!osloTemplate.getExternalAlertPol().isEmpty()) {
 			for (AlertPolicy alertPolicy : osloTemplate.getExternalAlertPol()) {
@@ -354,6 +473,15 @@ public class OpenSLOConverter {
 
 	}
 
+	/**
+	 * Operations returns a List of Maps each represents one Objective Object
+	 * declared in the Service Specification Object and used in the given OpenSLO
+	 * Template
+	 * 
+	 * @param osloTemplate
+	 * @return List<Map<String, Object>> List of Maps representation Objectives
+	 *         Objects
+	 */
 	private List<Map<String, Object>> createObjectivesList(OSLOTemplate osloTemplate) {
 		List<Map<String, Object>> objectivesList = new ArrayList<Map<String, Object>>();
 		if (checkIfThresholdMetric(osloTemplate)) {
@@ -368,6 +496,14 @@ public class OpenSLOConverter {
 
 	}
 
+	/**
+	 * Operations returns a Map representation of the given Objective according to
+	 * OpenSlO specification
+	 * 
+	 * @param objective
+	 * @param osloTemplate osloTemplate to check which attributes are needed
+	 * @return Map<String, Object> representation of the given Objective Object
+	 */
 	private Map<String, Object> createObjectiveMap(Objective objective, OSLOTemplate osloTemplate) {
 		Map<String, Object> objectiveMap = new LinkedHashMap<String, Object>();
 		if (objective.getDisplayName() != null) {
@@ -392,6 +528,12 @@ public class OpenSLOConverter {
 
 	}
 
+	/**
+	 * Operation returns the Vale for the SliceWindow Attribute
+	 * 
+	 * @param objective
+	 * @return value
+	 */
 	private Object getSliceWindow(Objective objective) {
 		if (objective.getDurationBased() != null) {
 			return createDurationShorthand(objective.getDurationBased());
@@ -400,6 +542,13 @@ public class OpenSLOConverter {
 		}
 	}
 
+	/**
+	 * Operation returns true when in the given OpenSLo Template Object a Threshold
+	 * Metric is used by the Service Level Indicator
+	 * 
+	 * @param osloTemplate
+	 * @return true when ThresholdMetric is used in the Service Level Indicator
+	 */
 	private Boolean checkIfThresholdMetric(OSLOTemplate osloTemplate) {
 		if (osloTemplate.getBuiltInIndicator() != null) {
 			return osloTemplate.getBuiltInIndicator().getTMetric() != null;
@@ -431,6 +580,13 @@ public class OpenSLOConverter {
 		return timeWindowMap;
 	}
 
+	/**
+	 * Operations takes a Service Level Indicator Object (SLI) and returns a Key
+	 * Value Map representation of the Object
+	 * 
+	 * @param sli
+	 * @return Map<String, Object> representing the given SLI Object
+	 */
 	private Map<String, Object> createBuiltInSLIMap(SLI sli) {
 		Map<String, Object> sliMap = new LinkedHashMap<String, Object>();
 		sliMap.put("metadata", createMetadataMap(sli.getName(), Optional.ofNullable(sli.getDisplayName())));
@@ -439,6 +595,13 @@ public class OpenSLOConverter {
 		return sliMap;
 	}
 
+	/**
+	 * Operation takes a SLI Object. Returns a Map representing the spec Attribute
+	 * of the SLI according to OpenSLO specification
+	 * 
+	 * @param sli
+	 * @return Map<String, Object> of the spec Attribute of SLI
+	 */
 	private Map<String, Object> createSLISpecMap(SLI sli) {
 		Map<String, Object> sliSpecMap = new LinkedHashMap<String, Object>();
 		sliSpecMap.put("description", sli.getDescription());
@@ -450,6 +613,13 @@ public class OpenSLOConverter {
 		return sliSpecMap;
 	}
 
+	/**
+	 * Operation takes a Ratio Metric Object and converts it to Map according to
+	 * Open SLO specification
+	 * 
+	 * @param rMetric
+	 * @return Map<String, Object> representation of given Ratio Metric Object
+	 */
 	private Map<String, Object> createRatioMetricMap(RatioMetric rMetric) {
 		Map<String, Object> ratioMetricMap = new LinkedHashMap<String, Object>();
 		ratioMetricMap.put("counter", rMetric.isCounter());
@@ -476,12 +646,26 @@ public class OpenSLOConverter {
 		return ratioMetricMap;
 	}
 
+	/**
+	 * Operation takes a Threshold Metric Object and converts it to Map according to
+	 * Open SLO specification
+	 * 
+	 * @param tresholdMetric
+	 * @return Map<String, Object> representation of given Threshold Metric Object
+	 */
 	private Map<String, Object> createThresholdMetricMap(ThresholdMetric thresholdMetric) {
 		Map<String, Object> thresholdMetricMap = new LinkedHashMap<String, Object>();
 		thresholdMetricMap.put("metricSource", createMetricSourceMap(thresholdMetric.getMetricSource()));
 		return thresholdMetricMap;
 	}
 
+	/**
+	 * Operation takes a Metric Source Object and converts it to Map according to
+	 * Open SLO specification
+	 * 
+	 * @param metricSource
+	 * @return Map<String, Object> representation of given Metric Source Object
+	 */
 	private Map<String, Object> createMetricSourceMap(MetricSource metricSource) {
 		Map<String, Object> metricSourceMap = new LinkedHashMap<String, Object>();
 		if (metricSource.getDataSource() != null) {
@@ -495,24 +679,39 @@ public class OpenSLOConverter {
 		return metricSourceMap;
 	}
 
+	/**
+	 * Operation converts a DataSource object into a Map representation according to
+	 * Open SLO specification
+	 * 
+	 * @param dataSource
+	 * @return Map<String, Object> of the given DataSource Object
+	 */
 	private Map<String, Object> createDataSourceMap(DataSource dataSource) {
 		Map<String, Object> dataSourceMap = new LinkedHashMap<String, Object>();
 		dataSourceMap.put("apiVersion", "openslo/v1");
 		dataSourceMap.put("kind", "DataSource");
-		dataSourceMap.put("metadata", createMetadataMap(dataSource.getName(), Optional.ofNullable(dataSource.getDisplayName())));
+		dataSourceMap.put("metadata",
+				createMetadataMap(dataSource.getName(), Optional.ofNullable(dataSource.getDisplayName())));
 		dataSourceMap.put("spec", createDataSourceSpecMap(dataSource));
 		return dataSourceMap;
 	}
 
+	/**
+	 * Operation takes a DataSource Object. Returns a Map representing the spec
+	 * Attribute of the DataSource according to OpenSLO specification
+	 * 
+	 * @param dataSource
+	 * @return Map<String, Object> of the spec Attribute of DataSource
+	 */
 	private Map<String, Object> createDataSourceSpecMap(DataSource dataSource) {
 		Map<String, Object> dataSourceSpecMap = new LinkedHashMap<String, Object>();
-		if(dataSource.getDescription() != null) {
+		if (dataSource.getDescription() != null) {
 			dataSourceSpecMap.put("description", dataSource.getDescription());
 		}
 		dataSourceSpecMap.put("type", dataSource.getType());
 		Map<String, Object> dataSourceConenctionDetailsMap = new LinkedHashMap<String, Object>();
 		dataSourceConenctionDetailsMap.put("url", dataSource.getUrl());
-		dataSourceSpecMap.put("connectionDetails",dataSourceConenctionDetailsMap);
+		dataSourceSpecMap.put("connectionDetails", dataSourceConenctionDetailsMap);
 		return dataSourceSpecMap;
 	}
 
