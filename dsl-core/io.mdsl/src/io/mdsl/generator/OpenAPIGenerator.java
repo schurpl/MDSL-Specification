@@ -1,6 +1,8 @@
 package io.mdsl.generator;
 
 import java.io.CharArrayWriter;
+import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -43,6 +45,11 @@ public class OpenAPIGenerator extends AbstractMDSLGenerator {
 			for(String osloFileName : convertedOSLOs.keySet()) {
 				fsa.generateFile(osloFileName, convertedOSLOs.get(osloFileName));
 			}
+			// Set openslo extension attribute 
+			Map<String, Object> extensions = new LinkedHashMap<String, Object>(oas.getInfo().getExtensions());
+			extensions.put("x-openslo", convertedOSLOs.keySet());
+			oas.getInfo().setExtensions(extensions);
+			
 		}
 		
 		

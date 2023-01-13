@@ -28,6 +28,7 @@ import io.mdsl.apiDescription.ThresholdMetric;
 import io.mdsl.apiDescription.TimeWindow;
 import io.swagger.v3.core.util.Yaml;
 
+
 /**
  * Class converts the OpenSLO template in a YAML formatted Sting
  * 
@@ -36,6 +37,66 @@ import io.swagger.v3.core.util.Yaml;
  */
 public class OpenSLOConverter {
 
+	private static final String CONNECTION_DETAILS = "connectionDetails";
+	private static final String URL = "url";
+	private static final String KIND_DATA_SOURCE = "DataSource";
+	private static final String TYPE = "type";
+	private static final String METRIC_SOURCE_REF = "metricSourceRef";
+	private static final String RAW = "raw";
+	private static final String RAW_TYPE = "rawType";
+	private static final String TOTAL = "total";
+	private static final String GOOD = "good";
+	private static final String METRIC_SOURCE = "metricSource";
+	private static final String COUNTER = "counter";
+	private static final String RATIO_METRIC = "ratioMetric";
+	private static final String THRESHOLD_METRIC = "thresholdMetric";
+	private static final String TRUE = "true";
+	private static final String FALSE = "false";
+	private static final String IS_ROLLING = "isRolling";
+	private static final String CALENDAR = "calendar";
+	private static final String TIME_ZONE = "timeZone";
+	private static final String START_TIME = "startTime";
+	private static final String DURATION = "duration";
+	private static final String TIME_SLICE_WINDOW = "timeSliceWindow";
+	private static final String TIME_SLICE_TARGET = "timeSliceTarget";
+	private static final String TARGET_PERCENT = "targetPercent";
+	private static final String VALUE = "value";
+	private static final String ALERT_POLICIES = "alertPolicies";
+	private static final String OBJECTIVES = "objectives";
+	private static final String BUDGETING_METHOD = "budgetingMethod";
+	private static final String TIME_WINDOW = "timeWindow";
+	private static final String INDICATOR_REF = "indicatorRef";
+	private static final String INDICATOR = "indicator";
+	private static final String SERVICE = "service";
+	private static final String KIND_SLO = "SLO";
+	private static final String DOCUMENT_SEPERATOR = "---";
+	private static final String NAME = "name";
+	private static final String DISPLAY_NAME = "displayName";
+	private static final String ALERT_AFTER = "alertAfter";
+	private static final String LOOKBACK_WINDOW = "lookbackWindow";
+	private static final String THRESHOLD = "threshold";
+	private static final String OP = "op";
+	private static final String CONDITION = "condition";
+	private static final String SEVERITY = "severity";
+	private static final String ALERT_CONDITION = "AlertCondition";
+	private static final String TARGET_REF = "targetRef";
+	private static final String NOTIFICATION_TARGETS = "notificationTargets";
+	private static final String CONDITIONS = "conditions";
+	private static final String ALERT_WHEN_BREACHING = "alertWhenBreaching";
+	private static final String ALERT_WHEN_RESOLVED = "alertWhenResolved";
+	private static final String ALERT_WHEN_NO_DATA = "alertWhenNoData";
+	private static final String ALERT_POLICY = "AlertPolicy";
+	private static final String TARGET = "target";
+	private static final String ALERT_NOTIFICATION_TARGET = "AlertNotificationTarget";
+	private static final String SPEC = "spec";
+	private static final String DESCRIPTION = "description";
+	private static final String METADATA = "metadata";
+	private static final String KIND_SERVICE = "Service";
+	private static final String NO_OPEN_SLO_TEMPLATE_DEFINED_ERROR_MESSAGE = "No Open SLO template defined";
+	private static final String SLI = "SLI";
+	private static final String KIND_KEYWORD = "kind";
+	private static final String OPENSLO_V1 = "openslo/v1";
+	private static final String API_VERSION = "apiVersion";
 	private ServiceSpecification mdslSpecification;
 	private URI inputFileURI;
 
@@ -57,7 +118,7 @@ public class OpenSLOConverter {
 	public Map<String, String> convert() {
 		Map<String, String> docummentMap = new LinkedHashMap<String, String>();
 		if (this.mdslSpecification.getOslos().isEmpty()) {
-			throw new NullPointerException("No Open SLO template defined");
+			throw new NullPointerException(NO_OPEN_SLO_TEMPLATE_DEFINED_ERROR_MESSAGE);
 		}
 
 		for (OSLOTemplate osloTemplate : this.mdslSpecification.getOslos()) {
@@ -69,8 +130,8 @@ public class OpenSLOConverter {
 			if (osloTemplate.getExternalIndicator() != null) {
 				Map<String, Object> sliMap = createBuiltInSLIMap(osloTemplate.getExternalIndicator());
 				Map<String, Object> sliHeadMap = new LinkedHashMap<String, Object>();
-				sliHeadMap.put("apiVersion", "openslo/v1");
-				sliHeadMap.put("kind", "SLI");
+				sliHeadMap.put(API_VERSION, OPENSLO_V1);
+				sliHeadMap.put(KIND_KEYWORD, SLI);
 				sliHeadMap.putAll(sliMap);
 				String sliString = toYAML(sliHeadMap, false);
 				osloString = osloString.concat(sliString);
@@ -200,16 +261,16 @@ public class OpenSLOConverter {
 	 */
 	private Map<String, Object> createServiceMap(Service service) {
 		Map<String, Object> serviceMap = new LinkedHashMap<String, Object>();
-		serviceMap.put("apiVersion", "openslo/v1");
-		serviceMap.put("kind", "Service");
-		serviceMap.put("metadata", createMetadataMap(service.getName(), Optional.of(service.getDisplayName())));
+		serviceMap.put(API_VERSION, OPENSLO_V1);
+		serviceMap.put(KIND_KEYWORD, KIND_SERVICE);
+		serviceMap.put(METADATA, createMetadataMap(service.getName(), Optional.of(service.getDisplayName())));
 		Map<String, Object> serviceSpecMap = new LinkedHashMap<String, Object>();
 		if (service.getPurpose() != null) {
-			serviceSpecMap.put("description", service.getPurpose());
+			serviceSpecMap.put(DESCRIPTION, service.getPurpose());
 		} else {
-			serviceSpecMap.put("description", "");
+			serviceSpecMap.put(DESCRIPTION, "");
 		}
-		serviceMap.put("spec", serviceSpecMap);
+		serviceMap.put(SPEC, serviceSpecMap);
 		return serviceMap;
 	}
 
@@ -223,11 +284,11 @@ public class OpenSLOConverter {
 	 */
 	private Map<String, Object> createNotificationTargetMap(AlertNotificationTarget alertNotificationTarget) {
 		Map<String, Object> alertNotificationTargetMap = new LinkedHashMap<String, Object>();
-		alertNotificationTargetMap.put("apiVersion", "openslo/v1");
-		alertNotificationTargetMap.put("kind", "AlertNotificationTarget");
-		alertNotificationTargetMap.put("metadata", createMetadataMap(alertNotificationTarget.getName(),
+		alertNotificationTargetMap.put(API_VERSION, OPENSLO_V1);
+		alertNotificationTargetMap.put(KIND_KEYWORD, ALERT_NOTIFICATION_TARGET);
+		alertNotificationTargetMap.put(METADATA, createMetadataMap(alertNotificationTarget.getName(),
 				Optional.of(alertNotificationTarget.getDisplayName())));
-		alertNotificationTargetMap.put("spec", createNotificationTargetSpecmMap(alertNotificationTarget));
+		alertNotificationTargetMap.put(SPEC, createNotificationTargetSpecmMap(alertNotificationTarget));
 		return alertNotificationTargetMap;
 	}
 
@@ -241,9 +302,9 @@ public class OpenSLOConverter {
 	 */
 	private Map<String, Object> createNotificationTargetSpecmMap(AlertNotificationTarget alertNotificationTarget) {
 		Map<String, Object> alertNotificationTargetSpecMap = new LinkedHashMap<String, Object>();
-		alertNotificationTargetSpecMap.put("target", alertNotificationTarget.getTarget());
+		alertNotificationTargetSpecMap.put(TARGET, alertNotificationTarget.getTarget());
 		if (alertNotificationTarget.getDescription() != null) {
-			alertNotificationTargetSpecMap.put("description", alertNotificationTarget.getDescription());
+			alertNotificationTargetSpecMap.put(DESCRIPTION, alertNotificationTarget.getDescription());
 		}
 		return alertNotificationTargetSpecMap;
 	}
@@ -257,11 +318,11 @@ public class OpenSLOConverter {
 	 */
 	private Map<String, Object> createAlertPolyMap(AlertPolicy alertPolicy) {
 		Map<String, Object> alertPolMap = new LinkedHashMap<String, Object>();
-		alertPolMap.put("apiVersion", "openslo/v1");
-		alertPolMap.put("kind", "AlertPolicy");
-		alertPolMap.put("metadata",
+		alertPolMap.put(API_VERSION, OPENSLO_V1);
+		alertPolMap.put(KIND_KEYWORD, ALERT_POLICY);
+		alertPolMap.put(METADATA,
 				createMetadataMap(alertPolicy.getName(), Optional.ofNullable(alertPolicy.getDisplayName())));
-		alertPolMap.put("spec", createAlertPolicySpecMap(alertPolicy));
+		alertPolMap.put(SPEC, createAlertPolicySpecMap(alertPolicy));
 		return alertPolMap;
 	}
 
@@ -275,13 +336,13 @@ public class OpenSLOConverter {
 	private Map<String, Object> createAlertPolicySpecMap(AlertPolicy alertPolicy) {
 		Map<String, Object> alertPolSpecMap = new LinkedHashMap<String, Object>();
 		if (alertPolicy.getDescription() != null) {
-			alertPolSpecMap.put("description", alertPolicy.getDescription());
+			alertPolSpecMap.put(DESCRIPTION, alertPolicy.getDescription());
 		}
-		alertPolSpecMap.put("alertWhenNoData", alertPolicy.isNodata());
-		alertPolSpecMap.put("alertWhenResolved", alertPolicy.isResolved());
-		alertPolSpecMap.put("alertWhenBreaching", alertPolicy.isBreaching());
-		alertPolSpecMap.put("conditions", createConditionList(alertPolicy.getConditions()));
-		alertPolSpecMap.put("notificationTargets",
+		alertPolSpecMap.put(ALERT_WHEN_NO_DATA, alertPolicy.isNodata());
+		alertPolSpecMap.put(ALERT_WHEN_RESOLVED, alertPolicy.isResolved());
+		alertPolSpecMap.put(ALERT_WHEN_BREACHING, alertPolicy.isBreaching());
+		alertPolSpecMap.put(CONDITIONS, createConditionList(alertPolicy.getConditions()));
+		alertPolSpecMap.put(NOTIFICATION_TARGETS,
 				createAlertNotificationTargetsList(alertPolicy.getNotificationTarget()));
 		return alertPolSpecMap;
 	}
@@ -301,7 +362,7 @@ public class OpenSLOConverter {
 		List<Map<String, Object>> alertNotificationTargetList = new ArrayList<Map<String, Object>>();
 		for (AlertNotificationTarget alertTarget : notificationTargets) {
 			Map<String, Object> targetMap = new LinkedHashMap<String, Object>();
-			targetMap.put("targetRef", alertTarget.getName());
+			targetMap.put(TARGET_REF, alertTarget.getName());
 			alertNotificationTargetList.add(targetMap);
 		}
 		return alertNotificationTargetList;
@@ -333,10 +394,10 @@ public class OpenSLOConverter {
 	 */
 	private Map<String, Object> createAlterConditionMap(AlertCondition alertCondition) {
 		Map<String, Object> alertConditionMap = new LinkedHashMap<String, Object>();
-		alertConditionMap.put("kind", "AlertCondition");
-		alertConditionMap.put("metadata",
+		alertConditionMap.put(KIND_KEYWORD, ALERT_CONDITION);
+		alertConditionMap.put(METADATA,
 				createMetadataMap(alertCondition.getName(), Optional.ofNullable(alertCondition.getDisplayName())));
-		alertConditionMap.put("spec", createAlertConditionSpecMap(alertCondition));
+		alertConditionMap.put(SPEC, createAlertConditionSpecMap(alertCondition));
 		return alertConditionMap;
 	}
 
@@ -350,10 +411,10 @@ public class OpenSLOConverter {
 	private Map<String, Object> createAlertConditionSpecMap(AlertCondition alertCondition) {
 		Map<String, Object> alertConditionSpecMap = new LinkedHashMap<String, Object>();
 		if (alertCondition.getDescription() != null) {
-			alertConditionSpecMap.put("description", alertCondition.getDescription());
+			alertConditionSpecMap.put(DESCRIPTION, alertCondition.getDescription());
 		}
-		alertConditionSpecMap.put("severity", alertCondition.getSeverity());
-		alertConditionSpecMap.put("condition", createConditionMap(alertCondition.getCondition()));
+		alertConditionSpecMap.put(SEVERITY, alertCondition.getSeverity());
+		alertConditionSpecMap.put(CONDITION, createConditionMap(alertCondition.getCondition()));
 		return alertConditionSpecMap;
 	}
 
@@ -366,11 +427,11 @@ public class OpenSLOConverter {
 	 */
 	private Map<String, Object> createConditionMap(Condition condition) {
 		Map<String, Object> conditionMap = new LinkedHashMap<String, Object>();
-		conditionMap.put("kind", condition.getKind());
-		conditionMap.put("op", condition.getOperator());
-		conditionMap.put("threshold", condition.getThreshold());
-		conditionMap.put("lookbackWindow", createDurationShorthand(condition.getLookBack()));
-		conditionMap.put("alertAfter", createDurationShorthand(condition.getAlertAfter()));
+		conditionMap.put(KIND_KEYWORD, condition.getKind());
+		conditionMap.put(OP, condition.getOperator());
+		conditionMap.put(THRESHOLD, condition.getThreshold());
+		conditionMap.put(LOOKBACK_WINDOW, createDurationShorthand(condition.getLookBack()));
+		conditionMap.put(ALERT_AFTER, createDurationShorthand(condition.getAlertAfter()));
 		return conditionMap;
 	}
 
@@ -394,9 +455,8 @@ public class OpenSLOConverter {
 	 */
 	private String toYAML(Map<String, Object> objectMap, Boolean isFirst) {
 		String yamlString = new String();
-		yamlString = yamlString.concat("---" + System.lineSeparator());
+		yamlString = yamlString.concat(DOCUMENT_SEPERATOR + System.lineSeparator());
 		yamlString = yamlString.concat(Yaml.pretty(objectMap));
-
 		return yamlString;
 	}
 
@@ -409,9 +469,9 @@ public class OpenSLOConverter {
 	 */
 	private Map<String, Object> createMetadataMap(String name, Optional<String> displayName) {
 		Map<String, Object> metadataMap = new LinkedHashMap<String, Object>();
-		metadataMap.put("name", name);
+		metadataMap.put(NAME, name);
 		if (displayName.isPresent()) {
-			metadataMap.put("displayName", displayName.get());
+			metadataMap.put(DISPLAY_NAME, displayName.get());
 		}
 		return metadataMap;
 	}
@@ -424,11 +484,11 @@ public class OpenSLOConverter {
 	 */
 	private Map<String, Object> convertOSLOTemplate(OSLOTemplate osloTemplate) {
 		Map<String, Object> osloMap = new LinkedHashMap<>();
-		osloMap.put("apiVersion", "openslo/v1");
-		osloMap.put("kind", "SLO");
-		osloMap.put("metadata",
+		osloMap.put(API_VERSION, OPENSLO_V1);
+		osloMap.put(KIND_KEYWORD, KIND_SLO);
+		osloMap.put(METADATA,
 				createMetadataMap(osloTemplate.getName(), Optional.ofNullable(osloTemplate.getDisplayName())));
-		osloMap.put("spec", createOsloSpecMap(osloTemplate));
+		osloMap.put(SPEC, createOsloSpecMap(osloTemplate));
 		return osloMap;
 	}
 
@@ -442,20 +502,20 @@ public class OpenSLOConverter {
 	private Map<String, Object> createOsloSpecMap(OSLOTemplate osloTemplate) {
 		Map<String, Object> specMap = new LinkedHashMap<>();
 		if (osloTemplate.getDescription() != null) {
-			specMap.put("description", osloTemplate.getDescription());
+			specMap.put(DESCRIPTION, osloTemplate.getDescription());
 		}
-		specMap.put("service", osloTemplate.getService().getName());
+		specMap.put(SERVICE, osloTemplate.getService().getName());
 
 		if (osloTemplate.getBuiltInIndicator() != null) {
-			specMap.put("indicator", createBuiltInSLIMap(osloTemplate.getBuiltInIndicator()));
+			specMap.put(INDICATOR, createBuiltInSLIMap(osloTemplate.getBuiltInIndicator()));
 		} else {
-			specMap.put("indicatorRef", osloTemplate.getExternalIndicator().getName());
+			specMap.put(INDICATOR_REF, osloTemplate.getExternalIndicator().getName());
 		}
 
-		specMap.put("timeWindow", createTimeWindowMap(osloTemplate.getTimeWindow()));
-		specMap.put("budgetingMethod", osloTemplate.getBudgetingMethod());
+		specMap.put(TIME_WINDOW, createTimeWindowMap(osloTemplate.getTimeWindow()));
+		specMap.put(BUDGETING_METHOD, osloTemplate.getBudgetingMethod());
 
-		specMap.put("objectives", createObjectivesList(osloTemplate));
+		specMap.put(OBJECTIVES, createObjectivesList(osloTemplate));
 
 		List<String> alertPolicyList = new ArrayList<String>();
 		if (!osloTemplate.getExternalAlertPol().isEmpty()) {
@@ -468,7 +528,7 @@ public class OpenSLOConverter {
 				alertPolicyList.add(alertPolicy.getName());
 			}
 		}
-		specMap.put("alertPolicies", alertPolicyList);
+		specMap.put(ALERT_POLICIES, alertPolicyList);
 		return specMap;
 
 	}
@@ -507,22 +567,22 @@ public class OpenSLOConverter {
 	private Map<String, Object> createObjectiveMap(Objective objective, OSLOTemplate osloTemplate) {
 		Map<String, Object> objectiveMap = new LinkedHashMap<String, Object>();
 		if (objective.getDisplayName() != null) {
-			objectiveMap.put("displayName", objective.getDisplayName());
+			objectiveMap.put(DISPLAY_NAME, objective.getDisplayName());
 		}
 		if (checkIfThresholdMetric(osloTemplate)) {
-			objectiveMap.put("op", objective.getOperator());
-			objectiveMap.put("value", objective.getCompValue());
+			objectiveMap.put(OP, objective.getOperator());
+			objectiveMap.put(VALUE, objective.getCompValue());
 		}
 		if (objective.getTarget() != null) {
-			objectiveMap.put("target", objective.getTarget().getTarget());
+			objectiveMap.put(TARGET, objective.getTarget().getTarget());
 		} else {
-			objectiveMap.put("targetPercent", objective.getTargetPer().getTargetPer());
+			objectiveMap.put(TARGET_PERCENT, objective.getTargetPer().getTargetPer());
 		}
 		if (osloTemplate.getBudgetingMethod().equals("Timeslices")) {
-			objectiveMap.put("timeSliceTarget", objective.getSliceTarget());
-			objectiveMap.put("timeSliceWindow", getSliceWindow(objective));
+			objectiveMap.put(TIME_SLICE_TARGET, objective.getSliceTarget());
+			objectiveMap.put(TIME_SLICE_WINDOW, getSliceWindow(objective));
 		} else if (osloTemplate.getBudgetingMethod().equals("RatioTimeslices")) {
-			objectiveMap.put("timeSliceWindow", getSliceWindow(objective));
+			objectiveMap.put(TIME_SLICE_WINDOW, getSliceWindow(objective));
 		}
 		return objectiveMap;
 
@@ -567,15 +627,15 @@ public class OpenSLOConverter {
 	private Map<String, Object> createTimeWindowMap(TimeWindow timeWindow) {
 		Map<String, Object> timeWindowMap = new LinkedHashMap<String, Object>();
 		String durationShorthand = createDurationShorthand(timeWindow.getDuration());
-		timeWindowMap.put("duration", durationShorthand);
+		timeWindowMap.put(DURATION, durationShorthand);
 		if (timeWindow.getCalendarBased() != null) {
 			Map<String, Object> calendarMap = new LinkedHashMap<String, Object>();
-			calendarMap.put("startTime", timeWindow.getCalendarBased().getStartDate());
-			calendarMap.put("timeZone", timeWindow.getCalendarBased().getTimeZone());
-			timeWindowMap.put("calendar", calendarMap);
-			timeWindowMap.put("isRolling", "false");
+			calendarMap.put(START_TIME, timeWindow.getCalendarBased().getStartDate());
+			calendarMap.put(TIME_ZONE, timeWindow.getCalendarBased().getTimeZone());
+			timeWindowMap.put(CALENDAR, calendarMap);
+			timeWindowMap.put(IS_ROLLING, FALSE);
 		} else {
-			timeWindowMap.put("isRolling", "true");
+			timeWindowMap.put(IS_ROLLING, TRUE);
 		}
 		return timeWindowMap;
 	}
@@ -589,9 +649,9 @@ public class OpenSLOConverter {
 	 */
 	private Map<String, Object> createBuiltInSLIMap(SLI sli) {
 		Map<String, Object> sliMap = new LinkedHashMap<String, Object>();
-		sliMap.put("metadata", createMetadataMap(sli.getName(), Optional.ofNullable(sli.getDisplayName())));
-		sliMap.put("metadata", createMetadataMap(sli.getName(), Optional.empty()));
-		sliMap.put("spec", createSLISpecMap(sli));
+		sliMap.put(METADATA, createMetadataMap(sli.getName(), Optional.ofNullable(sli.getDisplayName())));
+		sliMap.put(METADATA, createMetadataMap(sli.getName(), Optional.empty()));
+		sliMap.put(SPEC, createSLISpecMap(sli));
 		return sliMap;
 	}
 
@@ -604,11 +664,11 @@ public class OpenSLOConverter {
 	 */
 	private Map<String, Object> createSLISpecMap(SLI sli) {
 		Map<String, Object> sliSpecMap = new LinkedHashMap<String, Object>();
-		sliSpecMap.put("description", sli.getDescription());
+		sliSpecMap.put(DESCRIPTION, sli.getDescription());
 		if (sli.getTMetric() != null) {
-			sliSpecMap.put("thresholdMetric", createThresholdMetricMap(sli.getTMetric()));
+			sliSpecMap.put(THRESHOLD_METRIC, createThresholdMetricMap(sli.getTMetric()));
 		} else {
-			sliSpecMap.put("ratioMetric", createRatioMetricMap(sli.getRMetric()));
+			sliSpecMap.put(RATIO_METRIC, createRatioMetricMap(sli.getRMetric()));
 		}
 		return sliSpecMap;
 	}
@@ -622,26 +682,26 @@ public class OpenSLOConverter {
 	 */
 	private Map<String, Object> createRatioMetricMap(RatioMetric rMetric) {
 		Map<String, Object> ratioMetricMap = new LinkedHashMap<String, Object>();
-		ratioMetricMap.put("counter", rMetric.isCounter());
+		ratioMetricMap.put(COUNTER, rMetric.isCounter());
 		if (rMetric.getTotal() != null) {
 			if (rMetric.getGood() != null) {
 				Map<String, Object> goodMetricSourceWrapperMap = new LinkedHashMap<String, Object>();
-				goodMetricSourceWrapperMap.put("metricSource", createMetricSourceMap(rMetric.getGood()));
-				ratioMetricMap.put("good", goodMetricSourceWrapperMap);
+				goodMetricSourceWrapperMap.put(METRIC_SOURCE, createMetricSourceMap(rMetric.getGood()));
+				ratioMetricMap.put(GOOD, goodMetricSourceWrapperMap);
 			} else {
 				Map<String, Object> badMetricSourceWrapperMap = new LinkedHashMap<String, Object>();
-				badMetricSourceWrapperMap.put("metricSource", createMetricSourceMap(rMetric.getBad()));
-				ratioMetricMap.put("good", badMetricSourceWrapperMap);
+				badMetricSourceWrapperMap.put(METRIC_SOURCE, createMetricSourceMap(rMetric.getBad()));
+				ratioMetricMap.put(GOOD, badMetricSourceWrapperMap);
 			}
 			Map<String, Object> totalMetricSourceWrapperMap = new LinkedHashMap<String, Object>();
-			totalMetricSourceWrapperMap.put("metricSource", createMetricSourceMap(rMetric.getTotal()));
-			ratioMetricMap.put("total", totalMetricSourceWrapperMap);
+			totalMetricSourceWrapperMap.put(METRIC_SOURCE, createMetricSourceMap(rMetric.getTotal()));
+			ratioMetricMap.put(TOTAL, totalMetricSourceWrapperMap);
 
 		} else {
 			Map<String, Object> metricSourceWrapperMap = new LinkedHashMap<String, Object>();
-			ratioMetricMap.put("rawType", rMetric.getRType());
-			metricSourceWrapperMap.put("metricSource", createMetricSourceMap(rMetric.getRaw()));
-			ratioMetricMap.put("raw", metricSourceWrapperMap);
+			ratioMetricMap.put(RAW_TYPE, rMetric.getRType());
+			metricSourceWrapperMap.put(METRIC_SOURCE, createMetricSourceMap(rMetric.getRaw()));
+			ratioMetricMap.put(RAW, metricSourceWrapperMap);
 		}
 		return ratioMetricMap;
 	}
@@ -655,7 +715,7 @@ public class OpenSLOConverter {
 	 */
 	private Map<String, Object> createThresholdMetricMap(ThresholdMetric thresholdMetric) {
 		Map<String, Object> thresholdMetricMap = new LinkedHashMap<String, Object>();
-		thresholdMetricMap.put("metricSource", createMetricSourceMap(thresholdMetric.getMetricSource()));
+		thresholdMetricMap.put(METRIC_SOURCE, createMetricSourceMap(thresholdMetric.getMetricSource()));
 		return thresholdMetricMap;
 	}
 
@@ -669,12 +729,12 @@ public class OpenSLOConverter {
 	private Map<String, Object> createMetricSourceMap(MetricSource metricSource) {
 		Map<String, Object> metricSourceMap = new LinkedHashMap<String, Object>();
 		if (metricSource.getDataSource() != null) {
-			metricSourceMap.put("metricSourceRef", metricSource.getDataSource().getName());
+			metricSourceMap.put(METRIC_SOURCE_REF, metricSource.getDataSource().getName());
 		}
 		if (metricSource.getDataSource().getType() != null) {
-			metricSourceMap.put("type", metricSource.getType());
+			metricSourceMap.put(TYPE, metricSource.getType());
 		}
-		metricSourceMap.put("spec", metricSource.getSpec());
+		metricSourceMap.put(SPEC, metricSource.getSpec());
 
 		return metricSourceMap;
 	}
@@ -688,11 +748,11 @@ public class OpenSLOConverter {
 	 */
 	private Map<String, Object> createDataSourceMap(DataSource dataSource) {
 		Map<String, Object> dataSourceMap = new LinkedHashMap<String, Object>();
-		dataSourceMap.put("apiVersion", "openslo/v1");
-		dataSourceMap.put("kind", "DataSource");
-		dataSourceMap.put("metadata",
+		dataSourceMap.put(API_VERSION, OPENSLO_V1);
+		dataSourceMap.put(KIND_KEYWORD, KIND_DATA_SOURCE);
+		dataSourceMap.put(METADATA,
 				createMetadataMap(dataSource.getName(), Optional.ofNullable(dataSource.getDisplayName())));
-		dataSourceMap.put("spec", createDataSourceSpecMap(dataSource));
+		dataSourceMap.put(SPEC, createDataSourceSpecMap(dataSource));
 		return dataSourceMap;
 	}
 
@@ -706,12 +766,12 @@ public class OpenSLOConverter {
 	private Map<String, Object> createDataSourceSpecMap(DataSource dataSource) {
 		Map<String, Object> dataSourceSpecMap = new LinkedHashMap<String, Object>();
 		if (dataSource.getDescription() != null) {
-			dataSourceSpecMap.put("description", dataSource.getDescription());
+			dataSourceSpecMap.put(DESCRIPTION, dataSource.getDescription());
 		}
-		dataSourceSpecMap.put("type", dataSource.getType());
+		dataSourceSpecMap.put(TYPE, dataSource.getType());
 		Map<String, Object> dataSourceConenctionDetailsMap = new LinkedHashMap<String, Object>();
-		dataSourceConenctionDetailsMap.put("url", dataSource.getUrl());
-		dataSourceSpecMap.put("connectionDetails", dataSourceConenctionDetailsMap);
+		dataSourceConenctionDetailsMap.put(URL, dataSource.getUrl());
+		dataSourceSpecMap.put(CONNECTION_DETAILS, dataSourceConenctionDetailsMap);
 		return dataSourceSpecMap;
 	}
 
