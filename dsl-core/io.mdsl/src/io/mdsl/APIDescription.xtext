@@ -134,9 +134,7 @@ Condition:
 Objective:
 	('displayed' 'as' displayName=STRING)?
 	('with' 'operator' operator=OPERATOR compValue=Double)?
-	 // Nur verwenden wenn in der zugehörigen SLI eine Threshold metric verwendet wird (Syntax Check o.ä.)
 	('with'  target=Target | 'with'  targetPer=TargetPercent)
-	// Time Slices nur benötigt wenn in der SLI als Budgeting Method Time Slices ausgewählt sind
 	('with' 'SiliceTarget' sliceTarget=Double)?
 	('with' 'SiliceWindow' (numeric=INT | durationBased=Duration))?;
 
@@ -172,22 +170,19 @@ RatioMetric:
 MetricSource:
 	'Metric' 'Source'
 	('with' 'Data' 'Source' dataSource=[DataSource])?
-	('type' type=STRING)? // //Predefinded type Prometeus etc. 
-	'with' 'spec' spec=STRING // how to obtain data specs means querry url in case of Prometheus
+	('type' type=STRING)?  
+	'with' 'spec' spec=STRING 
 ;
 
 DataSource:
 	'Data' 'Source' name=sName ('displayed' 'as' displayName=STRING)?
 	('description' description=STRING)?
-	'type' type=STRING // Predefined type Prometeus etc. 
+	'type' type=STRING  
 	'connection' 'details' 'URL' url=STRING;
 
 BudgetingMethod:
 	'Occurrences' | 'Timeslices' | 'RatioTimeslices';
 
-
-
-//-----------------------------------------------------------
 Visibility:
 	'PUBLIC_API' | 'COMMUNITY_API' | 'SOLUTION_INTERNAL_API' | STRING;
 
@@ -523,7 +518,7 @@ Provider:
 	name=ID
 	('version' svi=SemanticVersioningIdentifier)?
 	epl+=EndpointList+ // [Q] is list here (+) and in EndpointInstance needed (*)? 
-	('under' 'conditions' tsandcs=STRING | 'with' 'provider' sla=SLA)? // neither Ts&Cs nor SLA must be present
+	('under' 'conditions' tsandcs=STRING | 'with' 'provider' sla=SLA | 'with' 'open' 'service' 'level' 'objective' oslo=[OSLOTemplate])? // neither Ts&Cs nor SLA must be present
 	('provider' 'governance' evolStrat=EvolutionStrategy)?;
 
 EndpointList:
