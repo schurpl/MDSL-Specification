@@ -65,7 +65,7 @@ terminal DATE:
 	':' ('0'..'5') ('0'..'9');
 
 Double returns ecore::EDouble:
-	INT+ '.' INT*;
+	INT+ ('.' INT*)?;
 
 terminal OPERATOR:
 	'lte' | 'gte' | 'lt' | 'gt';
@@ -148,7 +148,7 @@ TargetPercent:
 Service:
 	'Service'
 	name=sName ('displayed' 'as' displayName=STRING)?
-	('purpose:' purpose=STRING)?;
+	('purpose' purpose=STRING)?;
 
 SLI:
 	'SLI'
