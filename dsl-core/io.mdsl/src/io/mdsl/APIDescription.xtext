@@ -151,7 +151,7 @@ Service:
 	('purpose' purpose=STRING)?;
 
 SLI:
-	'SLI'
+	'Service' 'Level' 'Indicator'
 	name=sName ('displayed' 'as' displayName=STRING)?
 	('description' description=STRING)?
 	'with' (tMetric=ThresholdMetric | rMetric=RatioMetric);
