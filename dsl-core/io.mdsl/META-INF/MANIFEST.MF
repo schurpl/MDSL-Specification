@@ -28,8 +28,7 @@ Require-Bundle: org.eclipse.xtext,
  org.apache.commons.lang;bundle-version="2.6.0",
  org.apache.commons.lang3;bundle-version="3.7.0",
  io.github.microservice-api-patterns.protobufgen;bundle-version="1.2.0",
- org.slf4j.api,
- org.eclipse.emf.ecore.xcore.lib
+ org.slf4j.api
 Bundle-RequiredExecutionEnvironment: JavaSE-1.8
 Export-Package: io.mdsl,
  io.mdsl.apiDescription,

@@ -129,14 +129,16 @@ Condition:
 	'operator' operator=OPERATOR
 	'with' 'threshold' threshold=INT
 	'look' 'back' lookBack=Duration
-	'alert' 'after' alertAfter=Duration;
+	'alert' 'after' alertAfter=Duration
+;
 
 Objective:
 	('displayed' 'as' displayName=STRING)?
 	('with' 'operator' operator=OPERATOR compValue=Double)?
 	('with'  target=Target | 'with'  targetPer=TargetPercent)
-	('with' 'SiliceTarget' sliceTarget=Double)?
-	('with' 'SiliceWindow' (numeric=INT | durationBased=Duration))?;
+	('with' 'SliceTarget' sliceTarget=Double)?
+	('with' 'SliceWindow' (numeric=INT | durationBased=Duration))?
+;
 
 Target:
 	'target' target=Double
@@ -145,10 +147,10 @@ Target:
 TargetPercent:
 	'target' 'percent' targetPer =Double
 ;
-Service:
-	'Service'
-	name=sName ('displayed' 'as' displayName=STRING)?
-	('purpose' purpose=STRING)?;
+	Service:
+		'Service'
+		name=sName ('displayed' 'as' displayName=STRING)?
+		('purpose' purpose=STRING)?;
 
 SLI:
 	'Service' 'Level' 'Indicator'
